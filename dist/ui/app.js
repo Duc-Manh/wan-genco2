@@ -176,7 +176,7 @@ export class WanApp {
             </button>
             <div class="wan-brand-badge">EVN / GENCO2</div>
             <div class="wan-brand-titles">
-              <h1>SƠ ĐỒ KẾT NỐI MẠNG TRUYỀN DẪN WAN (GENCO2 &amp; EVNICT)</h1>
+              <h1>SƠ ĐỒ MẠNG TRUYỀN DẪN VIỄN THÔNG EVNGENCO2</h1>
               <span class="wan-subtitle">Bản vẽ kỹ thuật số hóa tương tác TypeScript • ${STATIONS.length} Trạm &amp; Nhà máy • ${this.vertices.length} Phần tử • ${this.edges.length} Tuyến kết nối</span>
             </div>
           </div>
@@ -228,12 +228,12 @@ export class WanApp {
         <nav class="wan-region-bar" id="wan-region-bar">
           <span class="wan-region-title">Khu vực:</span>
           ${REGION_PRESETS.map(
-            (r) => `
+      (r) => `
             <button class="wan-region-pill ${r.id === 'all' ? 'active' : ''}" data-region="${r.id}">
               ${r.label}
             </button>
           `
-          ).join('')}
+    ).join('')}
           <div class="wan-region-spacer"></div>
           <span class="wan-hint-text">Cuộn chuột để Phóng to/Thu nhỏ • Kéo chuột để Di chuyển • Nhấn vào Thiết bị/Tuyến cáp để xem &amp; sửa</span>
         </nav>
@@ -714,20 +714,19 @@ export class WanApp {
         <div class="wan-legend-section">
           <div class="wan-section-header">
             <span>GHI CHÚ THIẾT BỊ TRUYỀN DẪN</span>
-            ${
-              this.isolatedCategory
-                ? `<button id="btn-reset-isolate" class="wan-link-btn">Hiện tất cả</button>`
-                : ''
-            }
+            ${this.isolatedCategory
+          ? `<button id="btn-reset-isolate" class="wan-link-btn">Hiện tất cả</button>`
+          : ''
+        }
           </div>
           <p class="wan-section-desc">Nhấn vào từng loại thiết bị hoặc tuyến cáp để làm nổi bật (lọc) trên sơ đồ:</p>
           <div class="wan-legend-list">
             ${deviceMetas
-              .map((m) => {
-                const count = counts.get(m.id) || 0;
-                const isIsolated = this.isolatedCategory === m.id;
-                const isDimmed = this.isolatedCategory !== null && !isIsolated;
-                return `
+          .map((m) => {
+            const count = counts.get(m.id) || 0;
+            const isIsolated = this.isolatedCategory === m.id;
+            const isDimmed = this.isolatedCategory !== null && !isIsolated;
+            return `
                   <div class="wan-legend-row ${isIsolated ? 'active' : ''} ${isDimmed ? 'dimmed' : ''}" data-cat="${m.id}">
                     <span class="wan-swatch wan-swatch-${m.swatchShape}" style="background:${m.swatchFill};border-color:${m.swatchStroke}">
                       ${m.id === 'otn-evnict' || m.id === 'otn-genco2' ? 'OTN' : ''}
@@ -736,8 +735,8 @@ export class WanApp {
                     <span class="wan-legend-count">${count}</span>
                   </div>
                 `;
-              })
-              .join('')}
+          })
+          .join('')}
           </div>
         </div>
 
@@ -747,19 +746,19 @@ export class WanApp {
           </div>
           <div class="wan-legend-list">
             ${cableMetas
-              .map((m) => {
-                const count = counts.get(m.id) || 0;
-                const isIsolated = this.isolatedCategory === m.id;
-                const isDimmed = this.isolatedCategory !== null && !isIsolated;
-                return `
+          .map((m) => {
+            const count = counts.get(m.id) || 0;
+            const isIsolated = this.isolatedCategory === m.id;
+            const isDimmed = this.isolatedCategory !== null && !isIsolated;
+            return `
                   <div class="wan-legend-row ${isIsolated ? 'active' : ''} ${isDimmed ? 'dimmed' : ''}" data-cat="${m.id}">
                     <span class="wan-swatch-line" style="background:${m.swatchStroke}"></span>
                     <span class="wan-legend-label">${m.label}</span>
                     <span class="wan-legend-count">${count}</span>
                   </div>
                 `;
-              })
-              .join('')}
+          })
+          .join('')}
           </div>
         </div>
       `;
@@ -806,28 +805,28 @@ export class WanApp {
           />
           <div class="wan-type-chips">
             ${[
-              ['ALL', 'Tất cả'],
-              ['500kV', '500kV'],
-              ['220kV', '220kV'],
-              ['110kV', '110kV'],
-              ['PowerPlant', 'Nhà máy điện'],
-              ['DispatchCenter', 'A2 / A3'],
-              ['Office', 'Văn phòng'],
-            ]
-              .map(
-                ([val, lbl]) => `
+          ['ALL', 'Tất cả'],
+          ['500kV', '500kV'],
+          ['220kV', '220kV'],
+          ['110kV', '110kV'],
+          ['PowerPlant', 'Nhà máy điện'],
+          ['DispatchCenter', 'A2 / A3'],
+          ['Office', 'Văn phòng'],
+        ]
+          .map(
+            ([val, lbl]) => `
               <button class="wan-chip ${this.stationTypeFilter === val ? 'active' : ''}" data-type="${val}">
                 ${lbl}
               </button>
             `
-              )
-              .join('')}
+          )
+          .join('')}
           </div>
         </div>
         <div class="wan-station-list">
           ${filteredStations
-            .map(
-              (s) => `
+          .map(
+            (s) => `
             <div class="wan-station-card ${this.selectedId === s.id ? 'selected' : ''}" data-id="${s.id}">
               <div class="wan-station-card-top">
                 <span class="wan-station-name">${s.name}</span>
@@ -839,8 +838,8 @@ export class WanApp {
               </div>
             </div>
           `
-            )
-            .join('')}
+          )
+          .join('')}
         </div>
       `;
 
@@ -923,16 +922,16 @@ export class WanApp {
           </div>
           <div class="wan-region-stat-list">
             ${(['north', 'north-central', 'central', 'south-central', 'south']              )
-              .map((rId) => {
-                const count = STATIONS.filter((s) => s.region === rId).length;
-                return `
+          .map((rId) => {
+            const count = STATIONS.filter((s) => s.region === rId).length;
+            return `
                   <div class="wan-region-stat-row" data-region="${rId}">
                     <span>${REGION_LABELS[rId]}</span>
                     <strong>${count} trạm</strong>
                   </div>
                 `;
-              })
-              .join('')}
+          })
+          .join('')}
           </div>
         </div>
       `;
@@ -1103,27 +1102,26 @@ export class WanApp {
             </div>
           </div>
 
-          ${
-            nearby.length > 0
-              ? `
+          ${nearby.length > 0
+          ? `
             <div class="wan-nearby-section">
               <h4>Thiết bị / Trạm lân cận (${nearby.length})</h4>
               <div class="wan-nearby-list">
                 ${nearby
-                  .map(
-                    (n) => `
+            .map(
+              (n) => `
                   <button class="wan-nearby-item" data-id="${n.id}">
                     <span>${n.plainText}</span>
                     <small>${CATEGORY_LABELS[n.category] || n.category}</small>
                   </button>
                 `
-                  )
-                  .join('')}
+            )
+            .join('')}
               </div>
             </div>
           `
-              : ''
-          }
+          : ''
+        }
         </div>
       `;
 
