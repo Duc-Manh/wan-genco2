@@ -34,12 +34,15 @@ function buildStandaloneBundle(): void {
     'src/types/wan.ts',
     'src/data/stencils.ts',
     'src/data/ganttData.ts',
+    'src/data/baocaoData.ts',
     'src/data/wanVertices1.ts',
     'src/data/wanVertices2.ts',
     'src/data/wanEdges.ts',
     'src/data/wanElements.ts',
     'src/renderer/svgDiagram.ts',
     'src/ui/ganttModal.ts',
+    'src/ui/authWidget.ts',
+    'src/ui/deploymentModal.ts',
     'src/ui/app.ts',
     'src/main.ts',
   ];
@@ -62,9 +65,15 @@ function buildStandaloneBundle(): void {
 const total = transpileDir(SRC_DIR, DIST_DIR);
 buildStandaloneBundle();
 
-// Ensure assets are synced to dist/assets
+// Ensure assets and root files are synced to dist
 if (fs.existsSync(path.join(ROOT_DIR, 'assets'))) {
   fs.cpSync(path.join(ROOT_DIR, 'assets'), path.join(DIST_DIR, 'assets'), { recursive: true });
+}
+if (fs.existsSync(path.join(ROOT_DIR, 'baocao.xlsx'))) {
+  fs.copyFileSync(path.join(ROOT_DIR, 'baocao.xlsx'), path.join(DIST_DIR, 'baocao.xlsx'));
+}
+if (fs.existsSync(path.join(ROOT_DIR, 'favicon.ico'))) {
+  fs.copyFileSync(path.join(ROOT_DIR, 'favicon.ico'), path.join(DIST_DIR, 'favicon.ico'));
 }
 
 console.log(

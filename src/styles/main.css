@@ -1706,3 +1706,610 @@ body,
 .wan-gtip-row strong {
   color: #ffffff;
 }
+
+
+/* ========================================================
+   Floating Right-Side Auth Widget
+   ======================================================== */
+.wan-auth-widget-container {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1050;
+  pointer-events: none;
+}
+
+.wan-auth-toggle-tab {
+  pointer-events: auto;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 42px;
+  background: #29348f;
+  color: #ffffff;
+  border: 1px solid #1e266d;
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+  cursor: pointer;
+  box-shadow: -2px 4px 14px rgba(41, 52, 143, 0.4);
+  transition: width 0.15s, background 0.15s, transform 0.15s;
+}
+
+.wan-auth-toggle-tab:hover {
+  width: 44px;
+  background: #1e266d;
+}
+
+.wan-auth-toggle-tab.is-authed {
+  background: #059669;
+  border-color: #047857;
+  box-shadow: -2px 4px 14px rgba(5, 150, 105, 0.4);
+}
+
+.wan-auth-toggle-tab.is-authed:hover {
+  background: #047857;
+}
+
+.wan-auth-online-dot {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 0 2px #059669;
+}
+
+/* Auth Popover */
+.wan-auth-popover {
+  pointer-events: auto;
+  position: absolute;
+  right: 48px;
+  top: 50%;
+  transform: translateY(-50%) scale(0.95);
+  width: 300px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.22);
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+.wan-auth-popover::after {
+  content: '';
+  position: absolute;
+  right: -7px;
+  top: 50%;
+  transform: translateY(-50%) rotate(45deg);
+  width: 12px;
+  height: 12px;
+  background: #ffffff;
+  border-top: 1px solid #cbd5e1;
+  border-right: 1px solid #cbd5e1;
+}
+
+.wan-auth-popover.open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) scale(1);
+}
+
+.wan-auth-popover-header {
+  height: 40px;
+  padding: 0 14px;
+  background: #29348f;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.wan-auth-popover-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.wan-auth-close-btn {
+  background: transparent;
+  border: none;
+  color: #cbd5e1;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.wan-auth-close-btn:hover {
+  color: #ffffff;
+}
+
+.wan-auth-popover-body {
+  padding: 16px;
+}
+
+.wan-auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wan-auth-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.wan-auth-input-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.wan-auth-input {
+  width: 100%;
+  height: 36px;
+  padding: 0 34px 0 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #0f172a;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.wan-auth-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.wan-auth-input.error {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
+
+.wan-auth-eye-btn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+}
+
+.wan-auth-error-msg {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #dc2626;
+}
+
+.wan-auth-error-msg.hidden {
+  display: none;
+}
+
+.wan-btn-auth-action {
+  height: 36px;
+  border-radius: 6px;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 4px;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.wan-btn-auth-action.primary {
+  background: #29348f;
+  color: #ffffff;
+}
+
+.wan-btn-auth-action.primary:hover {
+  background: #1e266d;
+}
+
+.wan-btn-auth-action.danger {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+}
+
+.wan-btn-auth-action.danger:hover {
+  background: #fecaca;
+}
+
+.wan-auth-status-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.wan-auth-badge-success {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #bbf7d0;
+}
+
+.wan-auth-desc {
+  font-size: 12px;
+  color: #475569;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* ========================================================
+   Bottom Deployment Modal / Panel (Triển khai thực tế)
+   ======================================================== */
+.wan-deploy-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(2px);
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.wan-deploy-overlay.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.wan-deploy-modal {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 520px;
+  max-height: 75vh;
+  background: #ffffff;
+  border-radius: 14px 14px 0 0;
+  box-shadow: 0 -10px 40px rgba(15, 23, 42, 0.3);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: translateY(100%);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.wan-deploy-overlay.open .wan-deploy-modal {
+  transform: translateY(0);
+}
+
+.wan-deploy-header {
+  height: 54px;
+  padding: 0 20px;
+  background: #29348f;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  border-bottom: 1px solid #1e266d;
+}
+
+.wan-deploy-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.wan-deploy-badge {
+  background: #f59e0b;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 7px;
+  border-radius: 4px;
+  letter-spacing: 0.4px;
+}
+
+.wan-deploy-title-group h3 {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: 0.2px;
+}
+
+.wan-deploy-subtitle {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 1px;
+}
+
+.wan-deploy-subtitle code {
+  color: #38bdf8;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.wan-deploy-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.wan-deploy-role-pill {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wan-deploy-role-pill.authed {
+  background: #14532d;
+  color: #86efac;
+  border: 1px solid #22c55e;
+}
+
+.wan-deploy-role-pill.readonly {
+  background: rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.wan-deploy-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+}
+
+.wan-btn-deploy {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s;
+}
+
+.wan-btn-deploy.primary {
+  background: #10b981;
+  color: #ffffff;
+}
+
+.wan-btn-deploy.primary:hover:not(:disabled) {
+  background: #059669;
+}
+
+.wan-btn-deploy.primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.wan-btn-deploy.secondary {
+  background: #ffffff;
+  color: #29348f;
+}
+
+.wan-btn-deploy.secondary:hover {
+  background: #f1f5f9;
+}
+
+.wan-deploy-close-btn {
+  background: transparent;
+  border: none;
+  color: #cbd5e1;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+  margin-left: 4px;
+}
+
+.wan-deploy-close-btn:hover {
+  color: #ffffff;
+}
+
+.wan-deploy-table-wrapper {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 20px 20px;
+  background: #ffffff;
+}
+
+.wan-deploy-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  text-align: left;
+}
+
+.wan-deploy-table th {
+  position: sticky;
+  top: 0;
+  background: #f8fafc;
+  z-index: 5;
+  padding: 11px 12px;
+  font-weight: 700;
+  color: #475569;
+  border-bottom: 2px solid #cbd5e1;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.3px;
+}
+
+.wan-deploy-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+  vertical-align: middle;
+}
+
+.wan-deploy-row:hover {
+  background: #f8fafc;
+}
+
+.wan-deploy-row-edit {
+  background: #fefce8 !important;
+}
+
+.wan-deploy-row-edit.adding-new {
+  background: #fffbeb !important;
+  border-left: 3px solid #f59e0b;
+}
+
+.wan-dp-col-stt {
+  width: 50px;
+  text-align: center;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.wan-dp-col-time {
+  width: 170px;
+  white-space: nowrap;
+}
+
+.wan-dp-col-content {
+  min-width: 250px;
+}
+
+.wan-dp-col-status {
+  width: 150px;
+}
+
+.wan-dp-col-action {
+  width: 120px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.wan-status-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.wan-status-badge.badge-success {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.wan-status-badge.badge-warning {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.wan-dp-input {
+  width: 100%;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  font-size: 12.5px;
+  color: #0f172a;
+  outline: none;
+  background: #ffffff;
+}
+
+.wan-dp-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.wan-dp-select {
+  width: 100%;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  font-size: 12.5px;
+  color: #0f172a;
+  outline: none;
+  background: #ffffff;
+}
+
+.wan-dp-btn {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 4px;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: 4px;
+}
+
+.wan-dp-btn.save {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.wan-dp-btn.save:hover {
+  background: #1d4ed8;
+}
+
+.wan-dp-btn.cancel {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.wan-dp-btn.cancel:hover {
+  background: #cbd5e1;
+}
+
+.wan-dp-action-icon {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  transition: all 0.15s;
+}
+
+.wan-dp-action-icon:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.wan-dp-action-icon.danger:hover {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+.wan-deploy-empty {
+  text-align: center;
+  padding: 40px !important;
+  color: #94a3b8;
+  font-style: italic;
+}

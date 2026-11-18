@@ -14,6 +14,8 @@ import {
 } from '../data/wanElements.js';
 import { buildDiagramSvg } from '../renderer/svgDiagram.js';
 import { GanttModal } from './ganttModal.js';
+import { DeploymentModal } from './deploymentModal.js';
+import { AuthWidget } from './authWidget.js';
 
                         
                
@@ -135,6 +137,8 @@ export class WanApp {
 
           selectedId                = null;
           ganttModal             ;
+          deploymentModal                  ;
+          authWidget             ;
 
   constructor(container             ) {
     this.container = container;
@@ -154,6 +158,9 @@ export class WanApp {
          mount()       {
     this.renderShell();
     this.ganttModal = new GanttModal(this.container);
+    this.deploymentModal = new DeploymentModal(this.container);
+    this.authWidget = new AuthWidget(this.container);
+    this.authWidget.mount();
     this.initDiagramSvg();
     this.initMinimap();
     this.bindEvents();
@@ -414,6 +421,8 @@ export class WanApp {
         const subnav = (btn               ).dataset.subnav;
         if (subnav === 'progress-tier3') {
           this.ganttModal.open('BQLDA');
+        } else if (subnav === 'deployment') {
+          this.deploymentModal.open();
         }
       });
     });
