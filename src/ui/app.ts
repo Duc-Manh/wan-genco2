@@ -236,25 +236,9 @@ export class WanApp {
         <nav class="wan-subnav-bar" id="wan-subnav-bar">
           <div class="wan-subnav-spacer"></div>
           <div class="wan-subnav-group">
-            <button class="wan-subnav-item active" data-subnav="progress-tier3">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 20V10M18 20V4M6 20v-4"/>
-              </svg>
-              <span>Tiến độ cấp 3</span>
-            </button>
-            <button class="wan-subnav-item" data-subnav="deployment">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="m9 12 2 2 4-4"/>
-              </svg>
-              <span>Triển khai thực tế</span>
-            </button>
-            <button class="wan-subnav-item" data-subnav="discussion">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-              </svg>
-              <span>Góp ý thảo luận</span>
-            </button>
+            <button class="wan-subnav-item active" data-subnav="progress-tier3">Tiến độ cấp 3</button>
+            <button class="wan-subnav-item" data-subnav="deployment">Triển khai thực tế</button>
+            <button class="wan-subnav-item" data-subnav="discussion">Góp ý thảo luận</button>
           </div>
         </nav>
 
