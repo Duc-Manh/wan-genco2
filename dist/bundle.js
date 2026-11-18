@@ -2297,7 +2297,6 @@ class WanApp {
             <img src="./assets/logo.png" alt="EVNGENCO2" class="wan-brand-logo" />
             <div class="wan-brand-titles">
               <h1>SƠ ĐỒ MẠNG TRUYỀN DẪN VIỄN THÔNG EVNGENCO2</h1>
-              <span class="wan-subtitle">Bản vẽ kỹ thuật số hóa tương tác TypeScript • ${STATIONS.length} Trạm và Nhà máy • ${this.vertices.length} Phần tử • ${this.edges.length} Tuyến kết nối</span>
             </div>
           </div>
 
@@ -2354,12 +2353,11 @@ class WanApp {
             </button>
           `
     ).join('')}
-          <div class="wan-region-spacer"></div>
-          <span class="wan-hint-text">Cuộn chuột để Phóng to/Thu nhỏ • Kéo chuột để Di chuyển • Nhấn vào Thiết bị/Tuyến cáp để xem và sửa</span>
         </nav>
 
         <!-- Sub Navigation Bar -->
         <nav class="wan-subnav-bar" id="wan-subnav-bar">
+          <span class="wan-hint-text">Cuộn chuột để Phóng to/Thu nhỏ • Kéo chuột để Di chuyển • Nhấn vào Thiết bị/Tuyến cáp để xem và sửa</span>
           <div class="wan-subnav-spacer"></div>
           <div class="wan-subnav-group">
             <button class="wan-subnav-item active" data-subnav="progress-tier3">Bảng tiến độ</button>
