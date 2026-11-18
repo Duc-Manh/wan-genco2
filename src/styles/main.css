@@ -63,6 +63,19 @@ body,
   min-width: 0;
 }
 
+.wan-brand-logo {
+  height: 38px;
+  width: auto;
+  max-width: 140px;
+  object-fit: contain;
+  background: #ffffff;
+  padding: 3px 8px;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  display: block;
+  flex-shrink: 0;
+}
+
 .wan-brand-badge {
   padding: 4px 8px;
   border-radius: 5px;

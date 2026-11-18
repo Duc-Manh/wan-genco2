@@ -168,7 +168,7 @@ export class WanApp {
         <!-- Top Header Bar -->
         <header class="wan-header">
           <div class="wan-brand">
-            <div class="wan-brand-badge">EVN / GENCO2</div>
+            <img src="./assets/logo.png" alt="EVNGENCO2" class="wan-brand-logo" />
             <div class="wan-brand-titles">
               <h1>SƠ ĐỒ MẠNG TRUYỀN DẪN VIỄN THÔNG EVNGENCO2</h1>
               <span class="wan-subtitle">Bản vẽ kỹ thuật số hóa tương tác TypeScript • ${STATIONS.length} Trạm &amp; Nhà máy • ${this.vertices.length} Phần tử • ${this.edges.length} Tuyến kết nối</span>
