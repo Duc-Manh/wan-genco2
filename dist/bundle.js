@@ -1348,7 +1348,7 @@ const REGION_PRESETS                 = [
   },
   {
     id: 'north',
-    label: 'Miền Bắc & Trung Sơn',
+    label: 'Miền Bắc và Trung Sơn',
     bounds: { x: 1300, y: 150, w: 3450, h: 1220 },
   },
   {
@@ -1368,7 +1368,7 @@ const REGION_PRESETS                 = [
   },
   {
     id: 'south',
-    label: 'Miền Nam & Cần Thơ (A2)',
+    label: 'Miền Nam và Cần Thơ (A2)',
     bounds: { x: 1450, y: 2550, w: 3100, h: 1300 },
   },
   {
