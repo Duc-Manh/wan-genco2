@@ -33,6 +33,9 @@ function buildStandaloneBundle(): void {
   const orderedFiles = [
     'src/types/wan.ts',
     'src/data/stencils.ts',
+    'src/data/wanVertices1.ts',
+    'src/data/wanVertices2.ts',
+    'src/data/wanEdges.ts',
     'src/data/wanElements.ts',
     'src/renderer/svgDiagram.ts',
     'src/ui/app.ts',
@@ -44,7 +47,6 @@ function buildStandaloneBundle(): void {
     const fullPath = path.join(ROOT_DIR, relPath);
     const tsCode = fs.readFileSync(fullPath, 'utf-8');
     let jsCode = module.stripTypeScriptTypes(tsCode, { mode: 'strip' });
-    // Remove ES module import/export keywords for standalone IIFE bundle
     jsCode = jsCode.replace(/^\s*import\s+[\s\S]*?from\s+['"][^'"]+['"];?\s*$/gm, '');
     jsCode = jsCode.replace(/^\s*export\s+(const|function|class)\s+/gm, '$1 ');
     jsCode = jsCode.replace(/^\s*export\s+\{[^}]*\};?\s*$/gm, '');
@@ -58,5 +60,5 @@ function buildStandaloneBundle(): void {
 const total = transpileDir(SRC_DIR, DIST_DIR);
 buildStandaloneBundle();
 console.log(
-  `Đã biên dịch thành công ${total} file TypeScript sang dist/ (bao gồm dist/bundle.js chạy trực tiếp).`
+  `Đã biên dịch thành công ${total} file TypeScript sang dist/.`
 );
