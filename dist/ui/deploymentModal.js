@@ -2,6 +2,16 @@
 import { BaocaoStore } from '../data/baocaoData.js';
 import { AuthManager } from './authWidget.js';
 
+function escapeHtml(str     )         {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 export class DeploymentModal {
           container             ;
           modalOverlay                     = null;
@@ -120,10 +130,10 @@ export class DeploymentModal {
             <tr class="wan-deploy-row-edit" data-id="${item.id}">
               <td class="wan-dp-col-stt">${idx + 1}</td>
               <td class="wan-dp-col-time">
-                <input id="edit-time-${item.id}" type="text" class="wan-dp-input" value="${item.time}" placeholder="YYYY-MM-DD HH:mm" />
+                <input id="edit-time-${item.id}" type="text" class="wan-dp-input" value="${escapeHtml(item.time)}" placeholder="YYYY-MM-DD HH:mm" />
               </td>
               <td class="wan-dp-col-content">
-                <input id="edit-content-${item.id}" type="text" class="wan-dp-input" value="${item.content.replace(/"/g, '&quot;')}" />
+                <input id="edit-content-${item.id}" type="text" class="wan-dp-input" value="${escapeHtml(item.content)}" />
               </td>
               <td class="wan-dp-col-status">
                 <select id="edit-status-${item.id}" class="wan-dp-select">
@@ -144,10 +154,10 @@ export class DeploymentModal {
           tableRowsHtml += `
             <tr class="wan-deploy-row" data-id="${item.id}">
               <td class="wan-dp-col-stt">${idx + 1}</td>
-              <td class="wan-dp-col-time"><strong>${item.time}</strong></td>
-              <td class="wan-dp-col-content">${item.content}</td>
+              <td class="wan-dp-col-time"><strong>${escapeHtml(item.time)}</strong></td>
+              <td class="wan-dp-col-content">${escapeHtml(item.content)}</td>
               <td class="wan-dp-col-status">
-                <span class="wan-status-badge ${statusClass}">${item.status}</span>
+                <span class="wan-status-badge ${statusClass}">${escapeHtml(item.status)}</span>
               </td>
               ${
                 isAuthed
@@ -389,13 +399,17 @@ export class DeploymentModal {
     });
   }
 
-  // Đồng bộ cập nhật toàn bộ danh sách sang file baocao.xlsx
+  // Đồng bộ cập nhật toàn bộ danh sách sang file baocao.xlsx với xác thực an toàn
           async syncBaocaoToFile()                {
     const items = BaocaoStore.getItems();
+    const token = AuthManager.getAuthToken();
     try {
       await fetch('/api/baocao', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify(items),
       });
     } catch {
@@ -470,14 +484,20 @@ export class DeploymentModal {
    </Row>`;
 
     items.forEach((item) => {
-      const escape = (str        ) =>
-        str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      const sanitizeExcelCell = (val        ) => {
+        let text = val || '';
+        // Phòng chống CSV / Excel Formula Injection (nếu chuỗi bắt đầu bằng =, +, -, @)
+        if (/^[=+\-@]/.test(text)) {
+          text = "'" + text;
+        }
+        return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      };
 
       xml += `
    <Row ss:Height="22">
-    <Cell ss:StyleID="Time"><Data ss:Type="String">${escape(item.time)}</Data></Cell>
-    <Cell ss:StyleID="Data"><Data ss:Type="String">${escape(item.content)}</Data></Cell>
-    <Cell ss:StyleID="Data"><Data ss:Type="String">${escape(item.status)}</Data></Cell>
+    <Cell ss:StyleID="Time"><Data ss:Type="String">${sanitizeExcelCell(item.time)}</Data></Cell>
+    <Cell ss:StyleID="Data"><Data ss:Type="String">${sanitizeExcelCell(item.content)}</Data></Cell>
+    <Cell ss:StyleID="Data"><Data ss:Type="String">${sanitizeExcelCell(item.status)}</Data></Cell>
    </Row>`;
     });
 

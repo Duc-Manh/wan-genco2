@@ -1,34 +1,138 @@
-const AUTH_STORAGE_KEY = 'wan_admin_auth_code';
-export const ADMIN_AUTH_CODE = 'GE2PMB@2026!-1';
+const AUTH_STORAGE_KEY = 'wan_admin_session_v3';
+// Băm SHA-256 an toàn của mã quản trị - Mật mã gốc không bao giờ xuất hiện ở dạng plaintext
+export const ADMIN_AUTH_HASH = '45b8778b307f91d4e32dd17b51b02f4b95ff5b7c10e66485b6275cdf294d3105';
+
+export interface AuthSession {
+  token: string;
+  expiresAt: number;
+}
+
+export async function hashSha256(message: string): Promise<string> {
+  const msgBuffer = new TextEncoder().encode(message.trim());
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+}
 
 export class AuthManager {
+  private static failedAttempts = 0;
+  private static lockedUntil = 0;
+
   public static isAuthenticated(): boolean {
     try {
-      return localStorage.getItem(AUTH_STORAGE_KEY) === ADMIN_AUTH_CODE;
+      const raw = sessionStorage.getItem(AUTH_STORAGE_KEY) || localStorage.getItem(AUTH_STORAGE_KEY);
+      if (!raw) return false;
+      const session: AuthSession = JSON.parse(raw);
+      if (session && typeof session.expiresAt === 'number') {
+        if (Date.now() > session.expiresAt) {
+          this.logout();
+          return false;
+        }
+        return Boolean(session.token);
+      }
     } catch {
       return false;
-    }
-  }
-
-  public static login(code: string): boolean {
-    if (code.trim() === ADMIN_AUTH_CODE) {
-      try {
-        localStorage.setItem(AUTH_STORAGE_KEY, ADMIN_AUTH_CODE);
-      } catch {
-        // Ignore
-      }
-      window.dispatchEvent(new CustomEvent('wan:auth-changed', { detail: { isAuthenticated: true } }));
-      return true;
     }
     return false;
   }
 
+  public static getAuthToken(): string | null {
+    try {
+      const raw = sessionStorage.getItem(AUTH_STORAGE_KEY) || localStorage.getItem(AUTH_STORAGE_KEY);
+      if (!raw) return null;
+      const session: AuthSession = JSON.parse(raw);
+      if (session && session.token && Date.now() < session.expiresAt) {
+        return session.token;
+      }
+    } catch {}
+    return null;
+  }
+
+  public static async login(code: string): Promise<{ success: boolean; error?: string }> {
+    const trimmed = code.trim();
+    if (!trimmed) {
+      return { success: false, error: 'Vui lòng nhập mã đăng nhập!' };
+    }
+
+    // Kiểm tra giới hạn khóa tạm thời do nhập sai nhiều lần
+    if (Date.now() < this.lockedUntil) {
+      const waitSec = Math.ceil((this.lockedUntil - Date.now()) / 1000);
+      return { success: false, error: `Tài khoản tạm khóa do nhập sai quá 5 lần. Vui lòng đợi ${waitSec} giây.` };
+    }
+
+    // 1. Xác thực qua Server API /api/auth
+    try {
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: trimmed }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success && data.token) {
+        this.saveSession({
+          token: data.token,
+          expiresAt: data.expiresAt || Date.now() + 8 * 3600 * 1000,
+        });
+        this.failedAttempts = 0;
+        window.dispatchEvent(new CustomEvent('wan:auth-changed', { detail: { isAuthenticated: true } }));
+        return { success: true };
+      }
+
+      if (res.status === 429) {
+        this.lockedUntil = Date.now() + 60 * 1000;
+        return { success: false, error: data.error || 'Quá nhiều lần thử sai. Vui lòng thử lại sau 60 giây.' };
+      }
+
+      if (res.status === 401) {
+        this.recordFailedAttempt();
+        return { success: false, error: data.error || 'Mã đăng nhập không chính xác!' };
+      }
+    } catch {
+      // 2. Chế độ dự phòng offline (so sánh SHA-256 an toàn bằng Web Crypto API)
+      try {
+        const hash = await hashSha256(trimmed);
+        if (hash === ADMIN_AUTH_HASH) {
+          const offlineToken = `off-${hash.slice(0, 16)}-${Date.now()}`;
+          this.saveSession({
+            token: offlineToken,
+            expiresAt: Date.now() + 8 * 3600 * 1000,
+          });
+          this.failedAttempts = 0;
+          window.dispatchEvent(new CustomEvent('wan:auth-changed', { detail: { isAuthenticated: true } }));
+          return { success: true };
+        }
+      } catch {
+        // Crypto API error
+      }
+    }
+
+    this.recordFailedAttempt();
+    return { success: false, error: 'Mã đăng nhập không chính xác!' };
+  }
+
+  private static recordFailedAttempt(): void {
+    this.failedAttempts++;
+    if (this.failedAttempts >= 5) {
+      this.lockedUntil = Date.now() + 60 * 1000;
+    }
+  }
+
+  private static saveSession(session: AuthSession): void {
+    try {
+      const str = JSON.stringify(session);
+      sessionStorage.setItem(AUTH_STORAGE_KEY, str);
+      localStorage.setItem(AUTH_STORAGE_KEY, str);
+    } catch {}
+  }
+
   public static logout(): void {
     try {
+      sessionStorage.removeItem(AUTH_STORAGE_KEY);
       localStorage.removeItem(AUTH_STORAGE_KEY);
-    } catch {
-      // Ignore
-    }
+      localStorage.removeItem('wan_admin_auth_code'); // Dọn dẹp key cũ
+    } catch {}
     window.dispatchEvent(new CustomEvent('wan:auth-changed', { detail: { isAuthenticated: false } }));
   }
 }
@@ -194,20 +298,35 @@ export class AuthWidget {
     });
   }
 
-  private handleLoginSubmit(): void {
+  private async handleLoginSubmit(): Promise<void> {
     const input = this.wrapperEl?.querySelector('#auth-input-code') as HTMLInputElement | null;
     const errorMsg = this.wrapperEl?.querySelector('#auth-error-msg') as HTMLElement | null;
+    const submitBtn = this.wrapperEl?.querySelector('#btn-auth-submit') as HTMLButtonElement | null;
     if (!input) return;
 
     const val = input.value.trim();
-    if (AuthManager.login(val)) {
-      this.isOpen = false;
-      this.render();
-    } else {
-      if (errorMsg) {
-        errorMsg.classList.remove('hidden');
-        input.classList.add('error');
-        input.focus();
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Đang kiểm tra...';
+    }
+
+    try {
+      const result = await AuthManager.login(val);
+      if (result.success) {
+        this.isOpen = false;
+        this.render();
+      } else {
+        if (errorMsg) {
+          errorMsg.textContent = result.error || 'Mã đăng nhập không chính xác!';
+          errorMsg.classList.remove('hidden');
+          input.classList.add('error');
+          input.focus();
+        }
+      }
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Xác nhận';
       }
     }
   }
