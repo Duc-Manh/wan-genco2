@@ -168,12 +168,6 @@ export class WanApp {
         <!-- Top Header Bar -->
         <header class="wan-header">
           <div class="wan-brand">
-            <button id="btn-toggle-sidebar" class="wan-icon-btn" title="Đóng/Mở bảng điều khiển bên trái">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="3" width="18" height="18" rx="2"/>
-                <line x1="9" y1="3" x2="9" y2="21"/>
-              </svg>
-            </button>
             <div class="wan-brand-badge">EVN / GENCO2</div>
             <div class="wan-brand-titles">
               <h1>SƠ ĐỒ MẠNG TRUYỀN DẪN VIỄN THÔNG EVNGENCO2</h1>
