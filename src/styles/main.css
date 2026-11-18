@@ -107,6 +107,8 @@ body,
   position: relative;
   flex: 1;
   max-width: 440px;
+  background: #ffffff;
+  border-radius: 6px;
 }
 
 .wan-search-icon {
@@ -114,7 +116,7 @@ body,
   left: 11px;
   top: 50%;
   transform: translateY(-50%);
-  color: #94a3b8;
+  color: #64748b;
   pointer-events: none;
 }
 
@@ -123,17 +125,23 @@ body,
   height: 36px;
   padding: 0 32px 0 34px;
   border-radius: 6px;
-  border: 1px solid #334155;
-  background: #1e293b;
-  color: #f8fafc;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #0f172a;
   font-size: 12.5px;
   outline: none;
-  transition: border-color 0.15s, background 0.15s;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.wan-search-box input::placeholder {
+  color: #94a3b8;
 }
 
 .wan-search-box input:focus {
-  border-color: #3b82f6;
-  background: #0f172a;
+  border-color: #2563eb;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
 }
 
 .wan-search-clear {
@@ -143,7 +151,7 @@ body,
   transform: translateY(-50%);
   background: transparent;
   border: none;
-  color: #94a3b8;
+  color: #64748b;
   font-size: 18px;
   cursor: pointer;
 }
@@ -207,16 +215,20 @@ body,
   display: flex;
   align-items: center;
   gap: 8px;
+  background: #ffffff;
+  padding: 4px 8px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
 .wan-btn-group {
   display: flex;
   align-items: center;
-  gap: 4px;
-  background: #1e293b;
-  padding: 3px;
+  gap: 3px;
+  background: #f1f5f9;
+  padding: 2px 4px;
   border-radius: 6px;
-  border: 1px solid #334155;
+  border: 1px solid #e2e8f0;
 }
 
 .wan-tool-btn {
@@ -228,7 +240,7 @@ body,
   border-radius: 4px;
   border: none;
   background: transparent;
-  color: #cbd5e1;
+  color: #334155;
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
@@ -237,8 +249,8 @@ body,
 }
 
 .wan-tool-btn:hover {
-  background: #334155;
-  color: #ffffff;
+  background: #e2e8f0;
+  color: #0f172a;
 }
 
 .wan-tool-btn.active {
@@ -259,8 +271,8 @@ body,
   min-width: 44px;
   text-align: center;
   font-size: 12px;
-  font-weight: 600;
-  color: #f8fafc;
+  font-weight: 700;
+  color: #0f172a;
 }
 
 .wan-icon-btn {
