@@ -236,6 +236,11 @@ export class WanApp {
         <div class="wan-workspace">
           <!-- Left Sidebar -->
           <aside class="wan-sidebar" id="wan-sidebar">
+            <button id="btn-toggle-sidebar" class="wan-sidebar-toggle-tab" title="Thu gọn bảng điều khiển" aria-label="Thu gọn/Mở rộng bảng điều khiển">
+              <svg class="wan-toggle-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </button>
             <div class="wan-sidebar-tabs">
               <button class="wan-tab-btn active" data-tab="legend">Ghi chú &amp; Lọc</button>
               <button class="wan-tab-btn" data-tab="stations">Trạm (${STATIONS.length})</button>
@@ -346,12 +351,18 @@ export class WanApp {
   }
 
           bindEvents()       {
-    // Sidebar toggle
-    const btnSidebar = this.container.querySelector('#btn-toggle-sidebar');
+    // Sidebar toggle tab
+    const btnSidebar = this.container.querySelector('#btn-toggle-sidebar')                      ;
     btnSidebar?.addEventListener('click', () => {
       this.sidebarCollapsed = !this.sidebarCollapsed;
       const sb = this.container.querySelector('#wan-sidebar');
       sb?.classList.toggle('collapsed', this.sidebarCollapsed);
+      if (btnSidebar) {
+        btnSidebar.title = this.sidebarCollapsed
+          ? 'Mở rộng bảng điều khiển'
+          : 'Thu gọn bảng điều khiển';
+        btnSidebar.setAttribute('aria-expanded', String(!this.sidebarCollapsed));
+      }
     });
 
     // Sidebar tabs
