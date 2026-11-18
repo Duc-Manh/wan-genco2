@@ -5,38 +5,7 @@ export interface BaocaoItem {
   status: string;
 }
 
-export const INITIAL_BAOCAO_ITEMS: BaocaoItem[] = [
-  {
-    id: 'bc-1',
-    time: '2026-11-18 17:30',
-    content: 'Hoàn thành kiểm tra sơ đồ mạng truyền dẫn WAN EVNGENCO2 và đồng bộ giao diện',
-    status: 'Hoàn thành',
-  },
-  {
-    id: 'bc-2',
-    time: '2026-11-18 14:00',
-    content: 'Lắp đặt thiết bị MPLS-TP OT/IT tại các trạm miền Bắc và Trung Sơn',
-    status: 'Đang thực hiện',
-  },
-  {
-    id: 'bc-3',
-    time: '2026-11-17 09:00',
-    content: 'Khảo sát hiện trường và đo kiểm suy hao tuyến cáp quang liên kết Thác Mơ',
-    status: 'Đang thực hiện',
-  },
-  {
-    id: 'bc-4',
-    time: '2026-11-16 16:30',
-    content: 'Kiểm tra cấu hình cổng quang kết nối SDH/OTN Trung tâm điều hành A2',
-    status: 'Hoàn thành',
-  },
-  {
-    id: 'bc-5',
-    time: '2026-11-15 08:30',
-    content: 'Khởi động dự án nâng cấp tuyến truyền dẫn WAN Cụm Quảng Trị',
-    status: 'Hoàn thành',
-  },
-];
+export const INITIAL_BAOCAO_ITEMS: BaocaoItem[] = [];
 
 const STORAGE_KEY = 'wan_baocao_data';
 
@@ -44,16 +13,19 @@ export class BaocaoStore {
   public static getItems(): BaocaoItem[] {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
+      if (stored !== null) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return this.sortDesc(parsed);
+        if (Array.isArray(parsed)) {
+          // Lọc bỏ các hàng nội dung mẫu cũ nếu còn lưu trong cache trình duyệt
+          const sampleIds = new Set(['bc-1', 'bc-2', 'bc-3', 'bc-4', 'bc-5']);
+          const filtered = parsed.filter((item: BaocaoItem) => !sampleIds.has(item.id));
+          return this.sortDesc(filtered);
         }
       }
     } catch {
       // Fallback
     }
-    return this.sortDesc([...INITIAL_BAOCAO_ITEMS]);
+    return [];
   }
 
   public static saveItems(items: BaocaoItem[]): void {

@@ -85,16 +85,10 @@ def create_xlsx(filepath, headers, rows):
 
 if __name__ == "__main__":
     headers = ["time", "content", "status"]
-    rows = [
-        ["2026-11-18 17:30", "Hoàn thành kiểm tra sơ đồ mạng truyền dẫn WAN EVNGENCO2 và đồng bộ giao diện", "Hoàn thành"],
-        ["2026-11-18 14:00", "Lắp đặt thiết bị MPLS-TP OT/IT tại các trạm miền Bắc và Trung Sơn", "Đang thực hiện"],
-        ["2026-11-17 09:00", "Khảo sát hiện trường và đo kiểm suy hao tuyến cáp quang liên kết Thác Mơ", "Đang thực hiện"],
-        ["2026-11-16 16:30", "Kiểm tra cấu hình cổng quang kết nối SDH/OTN Trung tâm điều hành A2", "Hoàn thành"],
-        ["2026-11-15 08:30", "Khởi động dự án nâng cấp tuyến truyền dẫn WAN Cụm Quảng Trị", "Hoàn thành"],
-    ]
+    rows = []
 
     create_xlsx("baocao.xlsx", headers, rows)
     create_xlsx("assets/baocao.xlsx", headers, rows)
     create_xlsx("dist/baocao.xlsx", headers, rows)
-    print("Created baocao.xlsx successfully!")
+    print("Created empty baocao.xlsx successfully!")
 
