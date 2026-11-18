@@ -61,6 +61,12 @@ function buildStandaloneBundle(): void {
 
 const total = transpileDir(SRC_DIR, DIST_DIR);
 buildStandaloneBundle();
+
+// Ensure assets are synced to dist/assets
+if (fs.existsSync(path.join(ROOT_DIR, 'assets'))) {
+  fs.cpSync(path.join(ROOT_DIR, 'assets'), path.join(DIST_DIR, 'assets'), { recursive: true });
+}
+
 console.log(
   `Đã biên dịch thành công ${total} file TypeScript sang dist/.`
 );
