@@ -167,6 +167,15 @@ export class WanApp {
     this.renderSidebarContent();
     this.renderInspector();
 
+    // Trên màn hình tablet/mobile, mặc định thu gọn sidebar để không che khuất sơ đồ
+    if (window.innerWidth <= 860) {
+      this.sidebarCollapsed = true;
+      const sb = this.container.querySelector('#wan-sidebar');
+      sb?.classList.add('collapsed');
+      const btnSidebar = this.container.querySelector('#btn-toggle-sidebar');
+      btnSidebar?.setAttribute('title', 'Mở rộng bảng điều khiển');
+    }
+
     requestAnimationFrame(() => {
       this.zoomToBounds(REGION_PRESETS[0].bounds, false);
     });
@@ -530,6 +539,57 @@ export class WanApp {
       { passive: false }
     );
 
+    // Hỗ trợ cảm ứng hai ngón phóng to/thu nhỏ (Pinch-to-zoom) trên điện thoại và tablet
+    let initialPinchDist = 0;
+    let initialPinchScale = 1;
+
+    this.canvasWrapper.addEventListener(
+      'touchstart',
+      (e            ) => {
+        if (e.touches.length === 2) {
+          e.preventDefault();
+          const t1 = e.touches[0];
+          const t2 = e.touches[1];
+          initialPinchDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+          initialPinchScale = this.viewport.scale;
+        }
+      },
+      { passive: false }
+    );
+
+    this.canvasWrapper.addEventListener(
+      'touchmove',
+      (e            ) => {
+        if (e.touches.length === 2 && initialPinchDist > 0) {
+          e.preventDefault();
+          const t1 = e.touches[0];
+          const t2 = e.touches[1];
+          const currentDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+          const rect = this.canvasWrapper.getBoundingClientRect();
+          const midX = (t1.clientX + t2.clientX) / 2 - rect.left;
+          const midY = (t1.clientY + t2.clientY) / 2 - rect.top;
+
+          const ratio = currentDist / initialPinchDist;
+          const newScale = Math.min(3.5, Math.max(0.08, initialPinchScale * ratio));
+
+          const diagX = (midX - this.viewport.x) / this.viewport.scale;
+          const diagY = (midY - this.viewport.y) / this.viewport.scale;
+
+          this.viewport.scale = newScale;
+          this.viewport.x = midX - diagX * newScale;
+          this.viewport.y = midY - diagY * newScale;
+          this.updateViewportTransform();
+        }
+      },
+      { passive: false }
+    );
+
+    this.canvasWrapper.addEventListener('touchend', (e            ) => {
+      if (e.touches.length < 2) {
+        initialPinchDist = 0;
+      }
+    });
+
     this.canvasWrapper.addEventListener('pointerdown', (e              ) => {
       if (e.button !== 0) return;
       if ((e.target               ).closest('#wan-minimap-card')) return;
@@ -567,6 +627,14 @@ export class WanApp {
 
       const movedDist = Math.hypot(e.clientX - this.pointerDownX, e.clientY - this.pointerDownY);
       if (movedDist < 5) {
+        // Trên mobile, chạm vào nền canvas sẽ tự động thu gọn sidebar để xem bản vẽ
+        if (window.innerWidth <= 768 && !this.sidebarCollapsed) {
+          this.sidebarCollapsed = true;
+          this.container.querySelector('#wan-sidebar')?.classList.add('collapsed');
+          const btnSidebar = this.container.querySelector('#btn-toggle-sidebar');
+          btnSidebar?.setAttribute('title', 'Mở rộng bảng điều khiển');
+        }
+
         const targetEl = (e.target                  )?.closest?.('.wan-element')                      ;
         if (targetEl) {
           const id = targetEl.dataset.id || null;

@@ -2337,3 +2337,429 @@ body,
   opacity: 1;
   transform: translateY(0);
 }
+
+/* ========================================================
+   RESPONSIVE DESIGN & ADAPTIVE LAYOUT
+   Hỗ trợ đa dạng kích thước màn hình: 
+   - Desktop lớn (>= 1440px)
+   - Laptop / Desktop phổ thông (1025px - 1439px)
+   - Tablet ngang & dọc (769px - 1024px)
+   - Mobile ngang (577px - 768px)
+   - Mobile dọc (<= 576px)
+   ======================================================== */
+
+/* 1. Màn hình Laptop / Small Desktop (<= 1200px) */
+@media (max-width: 1200px) {
+  .wan-header {
+    gap: 10px;
+    padding: 0 12px;
+  }
+
+  .wan-brand-titles h1 {
+    font-size: 13px;
+  }
+
+  .wan-search-box {
+    max-width: 320px;
+  }
+
+  .wan-toolbar {
+    gap: 6px;
+    padding: 3px 6px;
+  }
+
+  .wan-tool-btn {
+    padding: 0 7px;
+    font-size: 11.5px;
+  }
+
+  .wan-hint-text {
+    max-width: 380px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .wan-gantt-table-pane {
+    width: 480px;
+  }
+}
+
+/* 2. Màn hình Tablet & Laptop nhỏ (<= 1024px) */
+@media (max-width: 1024px) {
+  .wan-brand-logo {
+    height: 32px;
+    max-width: 105px;
+    padding: 2px 6px;
+  }
+
+  .wan-brand-titles h1 {
+    font-size: 12px;
+  }
+
+  .wan-search-box {
+    max-width: 240px;
+  }
+
+  .wan-sidebar {
+    width: 280px;
+  }
+
+  .wan-sidebar.collapsed {
+    margin-left: -280px;
+  }
+
+  .wan-inspector {
+    width: 280px;
+  }
+
+  .wan-minimap-card {
+    width: 200px;
+  }
+
+  .wan-minimap-svg {
+    height: 125px;
+  }
+
+  .wan-hint-text {
+    max-width: 260px;
+    font-size: 10.5px;
+  }
+
+  .wan-gantt-modal {
+    width: 98vw;
+    height: 94vh;
+  }
+
+  .wan-gantt-table-pane {
+    width: 420px;
+  }
+
+  .wan-col-start,
+  .wan-col-end {
+    width: 70px;
+    font-size: 10.5px;
+  }
+
+  .wan-col-days {
+    width: 50px;
+  }
+}
+
+/* 3. Màn hình Tablet / Mobile lớn (<= 768px) */
+@media (max-width: 768px) {
+  .wan-header {
+    height: auto;
+    min-height: 52px;
+    padding: 8px 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .wan-brand {
+    flex: 1 1 auto;
+    min-width: 180px;
+    order: 1;
+  }
+
+  .wan-brand-logo {
+    height: 28px;
+  }
+
+  .wan-brand-titles h1 {
+    font-size: 11.5px;
+    white-space: normal;
+    line-height: 1.25;
+  }
+
+  /* Toolbar di chuyển lên cạnh phải của Row 1 */
+  .wan-toolbar {
+    order: 2;
+    flex: 0 0 auto;
+    overflow-x: auto;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .wan-toolbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Search box co giãn xuống dòng full width (Row 2) */
+  .wan-search-box {
+    flex: 1 1 100%;
+    max-width: 100%;
+    order: 3;
+    margin-top: 2px;
+  }
+
+  .wan-search-box input {
+    height: 32px;
+    font-size: 12px;
+  }
+
+  /* Thanh Region Quick-jump */
+  .wan-region-bar {
+    height: 34px;
+    padding: 0 8px;
+    gap: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .wan-region-title {
+    font-size: 10.5px;
+  }
+
+  .wan-region-pill {
+    height: 24px;
+    padding: 0 8px;
+    font-size: 10.5px;
+  }
+
+  /* Thanh Subnav phụ */
+  .wan-subnav-bar {
+    height: auto;
+    min-height: 34px;
+    padding: 4px 8px;
+  }
+
+  .wan-hint-text {
+    display: none; /* Ẩn gợi ý cuộn chuột trên màn hình cảm ứng */
+  }
+
+  .wan-subnav-spacer {
+    display: none;
+  }
+
+  .wan-subnav-group {
+    width: 100%;
+    justify-content: space-between;
+    gap: 4px;
+    margin: 0;
+  }
+
+  .wan-subnav-item {
+    flex: 1;
+    justify-content: center;
+    padding: 0 6px;
+    font-size: 11px;
+    height: 28px;
+  }
+
+  /* Sidebar dạng ngăn kéo trượt (Drawer) */
+  .wan-sidebar {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(300px, 86vw);
+    z-index: 50;
+    box-shadow: 6px 0 25px rgba(15, 23, 42, 0.25);
+  }
+
+  .wan-sidebar.collapsed {
+    margin-left: calc(-1 * min(300px, 86vw));
+  }
+
+  /* Inspector dạng trượt bên phải */
+  .wan-inspector {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    width: min(320px, 90vw);
+    z-index: 50;
+    box-shadow: -6px 0 25px rgba(15, 23, 42, 0.25);
+  }
+
+  /* Bản đồ thu nhỏ Minimap gọn gàng */
+  .wan-minimap-card {
+    width: 170px;
+    right: 8px;
+    bottom: 8px;
+  }
+
+  .wan-minimap-svg {
+    height: 110px;
+  }
+
+  /* Khung đăng nhập nổi bên phải */
+  .wan-auth-toggle-tab {
+    width: 32px;
+    height: 40px;
+    border-radius: 6px 0 0 6px;
+  }
+
+  .wan-auth-popover {
+    position: fixed;
+    inset: auto 12px 16px 12px;
+    top: auto;
+    right: 12px;
+    left: 12px;
+    width: auto;
+    max-width: calc(100vw - 24px);
+    transform: none;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  }
+
+  /* Modal Báo cáo tiến độ thực tế (Deployment Modal) */
+  .wan-deploy-modal {
+    height: 88vh;
+    max-height: 88vh;
+    border-radius: 12px 12px 0 0;
+  }
+
+  .wan-deploy-header {
+    height: auto;
+    min-height: 48px;
+    padding: 8px 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .wan-deploy-title-group h3 {
+    font-size: 13px;
+  }
+
+  .wan-deploy-header-actions {
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .wan-btn-deploy {
+    height: 28px;
+    padding: 0 9px;
+    font-size: 11px;
+  }
+
+  .wan-deploy-table {
+    min-width: 500px;
+  }
+
+  .wan-deploy-toast {
+    left: 14px;
+    right: 14px;
+    bottom: 20px;
+    text-align: center;
+    padding: 8px 14px;
+    font-size: 12px;
+  }
+
+  /* Modal Bảng tiến độ (Gantt Modal) */
+  .wan-gantt-modal {
+    width: 100vw;
+    height: 100vh;
+    max-width: 100vw;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .wan-gantt-header {
+    padding: 8px 12px;
+  }
+
+  .wan-gantt-brand h2 {
+    font-size: 13px;
+  }
+
+  .wan-gantt-toolbar {
+    padding: 6px 10px;
+    gap: 8px;
+  }
+
+  .wan-gantt-search {
+    width: 100%;
+  }
+
+  .wan-gantt-phase-filters {
+    overflow-x: auto;
+    width: 100%;
+    padding-bottom: 2px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .wan-gantt-split {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .wan-gantt-table-pane {
+    width: 360px;
+    flex-shrink: 0;
+  }
+}
+
+/* 4. Màn hình Mobile nhỏ (<= 480px) */
+@media (max-width: 480px) {
+  .wan-header {
+    padding: 6px 8px;
+  }
+
+  .wan-brand-logo {
+    height: 24px;
+    max-width: 75px;
+    padding: 1px 4px;
+  }
+
+  .wan-brand-titles h1 {
+    font-size: 10px;
+  }
+
+  .wan-toolbar {
+    padding: 2px 4px;
+  }
+
+  .wan-btn-group {
+    padding: 1px 2px;
+  }
+
+  .wan-tool-btn {
+    height: 24px;
+    padding: 0 5px;
+    font-size: 10.5px;
+  }
+
+  .wan-zoom-readout {
+    min-width: 32px;
+    font-size: 10.5px;
+  }
+
+  #btn-export-svg {
+    font-size: 10px;
+    padding: 0 5px;
+  }
+
+  #btn-export-png {
+    font-size: 10px;
+    padding: 0 5px;
+  }
+
+  .wan-subnav-item {
+    font-size: 10px;
+    padding: 0 4px;
+  }
+
+  /* Ẩn minimap trên mobile hẹp để không che tầm nhìn sơ đồ */
+  .wan-minimap-card {
+    display: none;
+  }
+
+  .wan-deploy-modal {
+    height: 92vh;
+    max-height: 92vh;
+  }
+
+  .wan-deploy-table th,
+  .wan-deploy-table td {
+    padding: 8px 6px;
+    font-size: 11.5px;
+  }
+
+  .wan-gantt-tab-btn {
+    padding: 0 8px;
+    font-size: 11px;
+    height: 34px;
+  }
+}
