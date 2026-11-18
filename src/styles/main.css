@@ -342,6 +342,7 @@ body,
 .wan-subnav-bar {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   height: 36px;
   padding: 0 16px;
   background: #f8fafc;
@@ -350,10 +351,15 @@ body,
   z-index: 14;
 }
 
+.wan-subnav-spacer {
+  flex: 1;
+}
+
 .wan-subnav-group {
   display: flex;
   align-items: center;
   gap: 8px;
+  margin-left: auto;
 }
 
 .wan-subnav-item {

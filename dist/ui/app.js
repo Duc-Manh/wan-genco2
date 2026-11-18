@@ -234,6 +234,7 @@ export class WanApp {
 
         <!-- Sub Navigation Bar -->
         <nav class="wan-subnav-bar" id="wan-subnav-bar">
+          <div class="wan-subnav-spacer"></div>
           <div class="wan-subnav-group">
             <button class="wan-subnav-item active" data-subnav="progress-tier3">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
