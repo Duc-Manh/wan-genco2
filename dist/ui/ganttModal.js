@@ -200,10 +200,25 @@ export class GanttModal {
       return true;
     });
 
+    // Current real-time timestamp
+    const now = new Date();
+    const nowMs = now.getTime();
+
+    // Helper: Check if real time is within task start and end
+    const isTaskActiveNow = (t           )          => {
+      if (!t.start) return false;
+      const sMs = new Date(t.start).getTime();
+      if (isNaN(sMs)) return false;
+      const eMs = t.end ? new Date(t.end).getTime() + 86400000 - 1 : sMs + 86400000 - 1;
+      if (isNaN(eMs)) return false;
+      return nowMs >= sMs && nowMs <= eMs;
+    };
+
     // Update stats info
+    const activeCount = filtered.filter((t) => isTaskActiveNow(t) && !t.isGroup && t.level > 0).length;
     const statsEl = this.modalOverlay.querySelector('#gantt-stats-info');
     if (statsEl) {
-      statsEl.innerHTML = `Hiển thị <strong>${filtered.length}</strong> / ${sheet.tasks.length} hạng mục`;
+      statsEl.innerHTML = `Hiển thị <strong>${filtered.length}</strong> / ${sheet.tasks.length} hạng mục &bull; <span class="wan-gantt-active-stat"><strong>${activeCount}</strong> đang thực hiện</span>`;
     }
 
     if (filtered.length === 0) {
@@ -244,10 +259,14 @@ export class GanttModal {
       maxDateMs += 20 * 86400000;
     }
 
+    // Ensure minDateMs <= nowMs and maxDateMs >= nowMs so real time is always included in the timeline
+    if (minDateMs > nowMs) minDateMs = nowMs - 15 * 86400000;
+    if (maxDateMs < nowMs) maxDateMs = nowMs + 20 * 86400000;
+
     // Generate Month timeline slots
     const startObj = new Date(minDateMs);
     const endObj = new Date(maxDateMs);
-    const months                                                                                   = [];
+    const months                                                                                                       = [];
 
     const cur = new Date(startObj.getFullYear(), startObj.getMonth(), 1);
     const endBoundary = new Date(endObj.getFullYear(), endObj.getMonth() + 1, 1);
@@ -257,12 +276,14 @@ export class GanttModal {
       const m = cur.getMonth() + 1;
       const mStart = new Date(y, m - 1, 1).getTime();
       const mEnd = new Date(y, m, 1).getTime();
+      const isCurrentMonth = y === now.getFullYear() && m === (now.getMonth() + 1);
       months.push({
         label: `T${m < 10 ? '0' + m : m}/${String(y).slice(2)}`,
         year: y,
         month: m,
         startMs: mStart,
         endMs: mEnd,
+        isCurrent: isCurrentMonth,
       });
       cur.setMonth(cur.getMonth() + 1);
     }
@@ -272,6 +293,34 @@ export class GanttModal {
     const timelineStartMs = months[0].startMs;
     const timelineEndMs = months[months.length - 1].endMs;
     const totalDurationMs = timelineEndMs - timelineStartMs;
+
+    // Real-time line and header pin calculation
+    let realtimeLineHtml = '';
+    let realtimeHeaderPinHtml = '';
+    let nowLeftPx = -1;
+
+    if (nowMs >= timelineStartMs && nowMs <= timelineEndMs) {
+      const nowLeftPct = ((nowMs - timelineStartMs) / totalDurationMs) * 100;
+      nowLeftPx = (nowLeftPct / 100) * totalTimelineWidth;
+
+      const todayDay = String(now.getDate()).padStart(2, '0');
+      const todayMonth = String(now.getMonth() + 1).padStart(2, '0');
+      const todayYear = now.getFullYear();
+      const formattedToday = `${todayDay}/${todayMonth}/${todayYear}`;
+
+      realtimeHeaderPinHtml = `
+        <div class="wan-realtime-header-pin" style="left: ${nowLeftPx.toFixed(1)}px;" title="Thời gian thực: ${formattedToday}"></div>
+      `;
+
+      realtimeLineHtml = `
+        <div class="wan-realtime-line" style="left: ${nowLeftPx.toFixed(1)}px;" title="Đường thời gian thực: ${formattedToday}">
+          <div class="wan-realtime-badge">
+            <span class="wan-realtime-dot"></span>
+            <span class="wan-realtime-label">Thời gian thực: ${formattedToday}</span>
+          </div>
+        </div>
+      `;
+    }
 
     // Helper to format date
     const formatDate = (d               ) => {
@@ -305,8 +354,12 @@ export class GanttModal {
     let timelineRowsHtml = '';
 
     filtered.forEach((t) => {
+      const isActive = isTaskActiveNow(t);
       const isGroup = t.isGroup || t.level === 0;
-      const rowClass = isGroup ? 'wan-gantt-row group' : 'wan-gantt-row';
+      let rowClass = isGroup ? 'wan-gantt-row group' : 'wan-gantt-row';
+      if (isActive) {
+        rowClass += ' is-now-active';
+      }
       const indentPx = Math.min(t.level, 3) * 16;
 
       // Table Row
@@ -315,6 +368,7 @@ export class GanttModal {
           <div class="wan-col-stt">${t.stt}</div>
           <div class="wan-col-name" style="padding-left: ${indentPx + 8}px;">
             <span class="wan-task-title" title="${t.name}">${t.name}</span>
+            ${isActive && !isGroup ? '<span class="wan-tag-active-now" title="Công việc đang diễn ra trong thời gian thực">Đang thực hiện</span>' : ''}
           </div>
           <div class="wan-col-days">${t.days !== null ? `${t.days} ng` : '-'}</div>
           <div class="wan-col-start">${formatDate(t.start)}</div>
@@ -360,8 +414,9 @@ export class GanttModal {
     const monthHeadersHtml = months
       .map(
         (m) => `
-      <div class="wan-gantt-month-col" style="width: ${MONTH_COL_WIDTH}px;">
+      <div class="wan-gantt-month-col ${m.isCurrent ? 'is-current-month' : ''}" style="width: ${MONTH_COL_WIDTH}px;" title="${m.isCurrent ? 'Tháng hiện tại theo thời gian thực' : ''}">
         <span class="wan-month-name">${m.label}</span>
+        ${m.isCurrent ? '<span class="wan-month-now-tag">Hiện tại</span>' : ''}
       </div>
     `
       )
@@ -388,18 +443,20 @@ export class GanttModal {
         <div class="wan-gantt-timeline-pane" id="gantt-timeline-pane">
           <div class="wan-gantt-timeline-header" style="width: ${totalTimelineWidth}px;">
             ${monthHeadersHtml}
+            ${realtimeHeaderPinHtml}
           </div>
           <div class="wan-gantt-timeline-body" id="gantt-timeline-body" style="width: ${totalTimelineWidth}px;">
             <!-- Background vertical grid lines -->
             <div class="wan-timeline-grid-bg">
               ${months
                 .map(
-                  () => `
-                <div class="wan-grid-month-line" style="width: ${MONTH_COL_WIDTH}px;"></div>
+                  (m) => `
+                <div class="wan-grid-month-line ${m.isCurrent ? 'is-current-month' : ''}" style="width: ${MONTH_COL_WIDTH}px;"></div>
               `
                 )
                 .join('')}
             </div>
+            ${realtimeLineHtml}
             ${timelineRowsHtml}
           </div>
         </div>
@@ -409,10 +466,28 @@ export class GanttModal {
       <div id="gantt-tooltip" class="wan-gantt-tooltip hidden"></div>
     `;
 
-    // Synchronize vertical scrolling between Table and Timeline
+    // Query elements
     const tableBody = bodyContainer.querySelector('#gantt-table-body')                      ;
     const timelinePane = bodyContainer.querySelector('#gantt-timeline-pane')                      ;
 
+    // Auto-scroll timeline to real-time position so today is immediately visible
+    if (nowLeftPx > 0 && timelinePane) {
+      requestAnimationFrame(() => {
+        timelinePane.scrollLeft = Math.max(0, nowLeftPx - timelinePane.clientWidth / 2);
+      });
+    }
+
+    // Auto-scroll table to the first active task on initial view
+    if (!this.searchQuery && tableBody) {
+      const firstActiveRow = tableBody.querySelector('.wan-gantt-row.is-now-active')                      ;
+      if (firstActiveRow) {
+        requestAnimationFrame(() => {
+          tableBody.scrollTop = Math.max(0, firstActiveRow.offsetTop - 80);
+        });
+      }
+    }
+
+    // Synchronize vertical scrolling between Table and Timeline
     let isSyncing = false;
     if (tableBody && timelinePane) {
       tableBody.addEventListener('scroll', () => {

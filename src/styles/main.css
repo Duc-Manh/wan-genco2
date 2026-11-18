@@ -1340,6 +1340,7 @@ body,
   display: flex;
   align-items: center;
   border-bottom: 1px solid #f1f5f9;
+  border-left: 3px solid transparent;
   font-size: 12px;
   transition: background 0.1s;
   user-select: none;
@@ -1355,6 +1356,48 @@ body,
   font-weight: 700;
   color: #0f172a;
   border-bottom-color: #e2e8f0;
+}
+
+/* Active Row in Real-Time */
+.wan-gantt-row.is-now-active {
+  background: #fefce8 !important; /* Soft yellow tint */
+  border-left-color: #f59e0b;
+}
+
+.wan-gantt-row.group.is-now-active {
+  background: #fef9c3 !important;
+  border-left-color: #d97706;
+}
+
+.wan-gantt-row.is-now-active:hover,
+.wan-gantt-row.is-now-active.hover {
+  background: #fef08a !important;
+}
+
+.wan-timeline-row.is-now-active {
+  background: #fefce8 !important;
+  border-left-color: transparent !important;
+}
+
+.wan-timeline-row.group.is-now-active {
+  background: #fef9c3 !important;
+  border-left-color: transparent !important;
+}
+
+.wan-tag-active-now {
+  display: inline-flex;
+  align-items: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: #b45309;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin-left: 6px;
+  line-height: 1.2;
+  flex-shrink: 0;
+  vertical-align: middle;
 }
 
 .wan-col-stt {
@@ -1428,12 +1471,32 @@ body,
 .wan-gantt-month-col {
   border-right: 1px solid #e2e8f0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   font-size: 11px;
   font-weight: 700;
   color: #475569;
   flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.wan-gantt-month-col.is-current-month {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+  font-weight: 800;
+  border-bottom: 2px solid #f59e0b;
+}
+
+.wan-month-now-tag {
+  display: block;
+  font-size: 7.5px;
+  font-weight: 800;
+  color: #b45309;
+  text-transform: uppercase;
+  line-height: 1;
+  margin-top: 1px;
+  letter-spacing: 0.2px;
 }
 
 .wan-gantt-timeline-body {
@@ -1456,6 +1519,94 @@ body,
   border-right: 1px dashed rgba(226, 232, 240, 0.9);
   height: 100%;
   flex-shrink: 0;
+}
+
+.wan-grid-month-line.is-current-month {
+  background: rgba(254, 243, 199, 0.45) !important;
+  border-right: 1px dashed rgba(245, 158, 11, 0.6) !important;
+}
+
+/* Real-time Indicator Line */
+.wan-realtime-header-pin {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #ef4444;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.wan-realtime-header-pin::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: -4px;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid #ef4444;
+}
+
+.wan-realtime-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #ef4444;
+  z-index: 25;
+  pointer-events: none;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.45);
+}
+
+.wan-realtime-badge {
+  position: sticky;
+  top: 4px;
+  transform: translateX(-50%);
+  background: #dc2626;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  pointer-events: auto;
+  cursor: default;
+  letter-spacing: 0.2px;
+}
+
+.wan-realtime-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ffffff;
+  display: inline-block;
+  animation: wan-pulse-dot 1.8s infinite;
+}
+
+@keyframes wan-pulse-dot {
+  0% {
+    transform: scale(0.9);
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.8);
+  }
+  70% {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 5px rgba(255, 255, 255, 0);
+  }
+  100% {
+    transform: scale(0.9);
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+  }
+}
+
+.wan-gantt-active-stat {
+  color: #b45309;
+  font-weight: 600;
 }
 
 .wan-timeline-row {
