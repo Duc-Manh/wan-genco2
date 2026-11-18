@@ -42,7 +42,7 @@ export class GanttModal {
     this.modalOverlay.innerHTML = `
       <div class="wan-gantt-modal" role="dialog" aria-modal="true" aria-labelledby="gantt-modal-title">
         <!-- Header -->
-        <div class="wan-gantt-header">
+        <div class="wan-gantt-header" style="background: #29348f;">
           <div class="wan-gantt-brand">
             <div class="wan-gantt-badge">TIẾN ĐỘ CẤP 3</div>
             <div>
