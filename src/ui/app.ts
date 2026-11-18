@@ -13,6 +13,7 @@ import {
   EDGES,
 } from '../data/wanElements.ts';
 import { buildDiagramSvg } from '../renderer/svgDiagram.ts';
+import { GanttModal } from './ganttModal.ts';
 
 interface RegionPreset {
   id: RegionId;
@@ -133,6 +134,7 @@ export class WanApp {
   private showMinimap = true;
 
   private selectedId: string | null = null;
+  private ganttModal!: GanttModal;
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -151,6 +153,7 @@ export class WanApp {
 
   public mount(): void {
     this.renderShell();
+    this.ganttModal = new GanttModal(this.container);
     this.initDiagramSvg();
     this.initMinimap();
     this.bindEvents();
@@ -403,11 +406,15 @@ export class WanApp {
       });
     });
 
-    // Subnav items (Tiến độ cấp 3, Triển khai thực tế, Góp ý thảo luận)
+    // Subnav items (Bảng tiến độ, Triển khai thực tế, Góp ý thảo luận)
     const subnavItems = this.container.querySelectorAll('.wan-subnav-item');
     subnavItems.forEach((btn) => {
       btn.addEventListener('click', () => {
         subnavItems.forEach((b) => b.classList.toggle('active', b === btn));
+        const subnav = (btn as HTMLElement).dataset.subnav;
+        if (subnav === 'progress-tier3') {
+          this.ganttModal.open('BQLDA');
+        }
       });
     });
 

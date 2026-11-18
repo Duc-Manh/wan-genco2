@@ -33,11 +33,13 @@ function buildStandaloneBundle(): void {
   const orderedFiles = [
     'src/types/wan.ts',
     'src/data/stencils.ts',
+    'src/data/ganttData.ts',
     'src/data/wanVertices1.ts',
     'src/data/wanVertices2.ts',
     'src/data/wanEdges.ts',
     'src/data/wanElements.ts',
     'src/renderer/svgDiagram.ts',
+    'src/ui/ganttModal.ts',
     'src/ui/app.ts',
     'src/main.ts',
   ];

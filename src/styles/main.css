@@ -1038,3 +1038,508 @@ body,
   font-size: 10.5px;
   color: var(--text-muted);
 }
+/* ==========================================================================
+   Gantt Chart Modal Styles (Tiến độ cấp 3 - cap3.xlsx)
+   ========================================================================== */
+
+.wan-gantt-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.72);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.wan-gantt-overlay.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.wan-gantt-modal {
+  width: 96vw;
+  height: 92vh;
+  max-width: 1600px;
+  max-height: 940px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.4);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: scale(0.97);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.wan-gantt-overlay.open .wan-gantt-modal {
+  transform: scale(1);
+}
+
+.wan-gantt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: #0f172a;
+  color: #ffffff;
+  border-bottom: 1px solid #1e293b;
+  flex-shrink: 0;
+}
+
+.wan-gantt-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.wan-gantt-badge {
+  padding: 4px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+.wan-gantt-brand h2 {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0;
+  color: #ffffff;
+}
+
+.wan-gantt-subtitle {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.wan-gantt-close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  font-size: 22px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.wan-gantt-close-btn:hover {
+  background: rgba(239, 68, 68, 0.85);
+}
+
+/* Tabs */
+.wan-gantt-tabs {
+  display: flex;
+  align-items: center;
+  background: #f1f5f9;
+  border-bottom: 1px solid var(--border-color);
+  padding: 0 16px;
+  overflow-x: auto;
+  flex-shrink: 0;
+  gap: 4px;
+}
+
+.wan-gantt-tab-btn {
+  height: 40px;
+  padding: 0 16px;
+  border: none;
+  background: transparent;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.wan-gantt-tab-btn:hover {
+  color: #0f172a;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.wan-gantt-tab-btn.active {
+  color: #2563eb;
+  border-bottom-color: #2563eb;
+  background: #ffffff;
+}
+
+.wan-gantt-tab-count {
+  padding: 2px 6px;
+  border-radius: 99px;
+  font-size: 11px;
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.wan-gantt-tab-btn.active .wan-gantt-tab-count {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+/* Toolbar */
+.wan-gantt-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 16px;
+  background: #ffffff;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.wan-gantt-search {
+  position: relative;
+  width: 300px;
+}
+
+.wan-gantt-search svg {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.wan-gantt-search input {
+  width: 100%;
+  height: 32px;
+  padding: 0 28px 0 32px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 12px;
+  outline: none;
+}
+
+.wan-gantt-search input:focus {
+  border-color: #2563eb;
+}
+
+.wan-gantt-search button {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.wan-gantt-phase-filters {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wan-gantt-filter-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #64748b;
+  margin-right: 2px;
+}
+
+.wan-gantt-filter-pill {
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  font-size: 11px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.wan-gantt-filter-pill:hover {
+  background: #e2e8f0;
+}
+
+.wan-gantt-filter-pill.active {
+  background: #0f172a;
+  color: #ffffff;
+  border-color: #0f172a;
+}
+
+.wan-gantt-stats-info {
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* Split Viewport */
+.wan-gantt-body {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  background: #ffffff;
+  display: flex;
+  overflow: hidden;
+}
+
+.wan-gantt-split {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.wan-gantt-table-pane {
+  width: 580px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 2px solid #cbd5e1;
+  background: #ffffff;
+}
+
+.wan-gantt-table-header {
+  height: 36px;
+  background: #f1f5f9;
+  border-bottom: 1px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #475569;
+  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.wan-gantt-table-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.wan-gantt-row {
+  height: 34px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 12px;
+  transition: background 0.1s;
+  user-select: none;
+}
+
+.wan-gantt-row:hover,
+.wan-gantt-row.hover {
+  background: #eff6ff !important;
+}
+
+.wan-gantt-row.group {
+  background: #f8fafc;
+  font-weight: 700;
+  color: #0f172a;
+  border-bottom-color: #e2e8f0;
+}
+
+.wan-col-stt {
+  width: 55px;
+  padding: 0 8px;
+  text-align: center;
+  flex-shrink: 0;
+  font-weight: 600;
+}
+
+.wan-col-name {
+  flex: 1;
+  min-width: 0;
+  padding: 0 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wan-col-days {
+  width: 65px;
+  text-align: right;
+  padding: 0 8px;
+  flex-shrink: 0;
+  color: #64748b;
+}
+
+.wan-col-start,
+.wan-col-end {
+  width: 80px;
+  text-align: center;
+  padding: 0 4px;
+  flex-shrink: 0;
+  color: #475569;
+  font-size: 11px;
+}
+
+.wan-col-unit {
+  width: 90px;
+  padding: 0 8px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #64748b;
+  font-size: 11px;
+}
+
+/* Timeline Pane */
+.wan-gantt-timeline-pane {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  background: #ffffff;
+  position: relative;
+}
+
+.wan-gantt-timeline-header {
+  height: 36px;
+  background: #f8fafc;
+  border-bottom: 1px solid #cbd5e1;
+  display: flex;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.wan-gantt-month-col {
+  border-right: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #475569;
+  flex-shrink: 0;
+}
+
+.wan-gantt-timeline-body {
+  position: relative;
+  min-height: 100%;
+}
+
+.wan-timeline-grid-bg {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.wan-grid-month-line {
+  border-right: 1px dashed rgba(226, 232, 240, 0.9);
+  height: 100%;
+  flex-shrink: 0;
+}
+
+.wan-timeline-row {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+}
+
+.wan-gantt-bar {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
+  overflow: hidden;
+}
+
+.wan-gantt-bar:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+  filter: brightness(1.1);
+  z-index: 10;
+}
+
+.wan-gantt-bar.is-group {
+  border-radius: 2px;
+  top: 8px;
+  bottom: 8px;
+}
+
+.wan-bar-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.wan-gantt-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: #64748b;
+  gap: 12px;
+  padding: 40px;
+  text-align: center;
+}
+
+/* Tooltip */
+.wan-gantt-tooltip {
+  position: fixed;
+  transform: translate(-50%, -100%);
+  background: #0f172a;
+  color: #ffffff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  z-index: 2000;
+  max-width: 340px;
+  line-height: 1.4;
+}
+
+.wan-gtip-title {
+  font-weight: 700;
+  font-size: 12px;
+  margin-bottom: 4px;
+  color: #38bdf8;
+}
+
+.wan-gtip-row {
+  font-size: 11px;
+  color: #cbd5e1;
+}
+
+.wan-gtip-row strong {
+  color: #ffffff;
+}
