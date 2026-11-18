@@ -1112,12 +1112,17 @@ body,
   color: #ffffff;
   border-bottom: 1px solid #1e266d;
   flex-shrink: 0;
+  gap: 12px;
+  min-width: 0;
 }
 
 .wan-gantt-brand {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
 }
 
 .wan-gantt-badge {
@@ -1128,6 +1133,13 @@ body,
   background: linear-gradient(135deg, #2563eb, #1d4ed8);
   color: #ffffff;
   white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.wan-gantt-brand > div {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
 }
 
 .wan-gantt-brand h2 {
@@ -1135,12 +1147,18 @@ body,
   font-weight: 700;
   margin: 0;
   color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .wan-gantt-subtitle {
   font-size: 12px;
   color: #94a3b8;
   margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .wan-gantt-close-btn {
@@ -1156,6 +1174,7 @@ body,
   align-items: center;
   justify-content: center;
   transition: background 0.15s;
+  flex-shrink: 0;
 }
 
 .wan-gantt-close-btn:hover {
@@ -1268,6 +1287,45 @@ body,
   font-size: 16px;
 }
 
+/* View Mode Toggle */
+.wan-gantt-view-toggle {
+  display: inline-flex;
+  align-items: center;
+  background: #f1f5f9;
+  border-radius: 6px;
+  padding: 2px;
+  border: 1px solid #cbd5e1;
+  flex-shrink: 0;
+}
+
+.wan-gantt-view-btn {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: #475569;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.wan-gantt-view-btn:hover {
+  color: #0f172a;
+}
+
+.wan-gantt-view-btn.active {
+  background: #ffffff;
+  color: #2563eb;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
 .wan-gantt-phase-filters {
   display: flex;
   align-items: center;
@@ -1324,6 +1382,30 @@ body,
   width: 100%;
   height: 100%;
   overflow: hidden;
+}
+
+.wan-gantt-split.view-table .wan-gantt-table-pane {
+  width: 100% !important;
+  flex: 1 1 100% !important;
+  border-right: none !important;
+}
+
+.wan-gantt-split.view-table .wan-gantt-timeline-pane {
+  display: none !important;
+}
+
+.wan-gantt-split.view-timeline .wan-gantt-table-pane {
+  display: none !important;
+}
+
+.wan-gantt-split.view-timeline .wan-gantt-timeline-pane {
+  width: 100% !important;
+  flex: 1 1 100% !important;
+}
+
+.wan-gantt-split.view-split {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .wan-gantt-table-pane {
@@ -2657,10 +2739,12 @@ body,
 
   /* Modal Bảng tiến độ (Gantt Modal) */
   .wan-gantt-modal {
-    width: 100vw;
-    height: 100vh;
-    max-width: 100vw;
-    max-height: 100vh;
+    width: 100% !important;
+    height: 100% !important;
+    height: 100dvh !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    max-height: 100dvh !important;
     border-radius: 0;
   }
 
@@ -2679,6 +2763,20 @@ body,
 
   .wan-gantt-search {
     width: 100%;
+    order: 1;
+  }
+
+  .wan-gantt-view-toggle {
+    width: 100%;
+    display: flex;
+    order: 2;
+  }
+
+  .wan-gantt-view-btn {
+    flex: 1;
+    justify-content: center;
+    font-size: 11px;
+    padding: 0 6px;
   }
 
   .wan-gantt-phase-filters {
@@ -2686,6 +2784,13 @@ body,
     width: 100%;
     padding-bottom: 2px;
     -webkit-overflow-scrolling: touch;
+    order: 3;
+  }
+
+  .wan-gantt-stats-info {
+    width: 100%;
+    font-size: 11px;
+    order: 4;
   }
 
   .wan-gantt-split {
@@ -2696,6 +2801,31 @@ body,
   .wan-gantt-table-pane {
     width: 360px;
     flex-shrink: 0;
+  }
+
+  .wan-col-stt {
+    width: 38px;
+    padding: 0 4px;
+    font-size: 10.5px;
+  }
+
+  .wan-col-days {
+    width: 46px;
+    padding: 0 4px;
+    font-size: 10.5px;
+  }
+
+  .wan-col-start,
+  .wan-col-end {
+    width: 65px;
+    padding: 0 2px;
+    font-size: 10px;
+  }
+
+  .wan-col-unit {
+    width: 75px;
+    padding: 0 4px;
+    font-size: 10px;
   }
 }
 
@@ -2769,5 +2899,32 @@ body,
     padding: 0 8px;
     font-size: 11px;
     height: 34px;
+  }
+
+  .wan-gantt-badge {
+    display: none;
+  }
+
+  .wan-col-unit {
+    display: none !important;
+  }
+
+  .wan-col-stt {
+    width: 32px;
+    font-size: 10px;
+    padding: 0 2px;
+  }
+
+  .wan-col-days {
+    width: 40px;
+    font-size: 10px;
+    padding: 0 2px;
+  }
+
+  .wan-col-start,
+  .wan-col-end {
+    width: 58px;
+    font-size: 9.5px;
+    padding: 0 2px;
   }
 }

@@ -7,6 +7,7 @@ export class GanttModal {
   private activeSheetKey: string = 'BQLDA';
   private searchQuery: string = '';
   private selectedPhase: string = 'ALL';
+  private viewMode: 'split' | 'table' | 'timeline' = 'split';
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -16,6 +17,7 @@ export class GanttModal {
     if (GANTT_DATA[initialSheetKey]) {
       this.activeSheetKey = initialSheetKey;
     }
+    this.viewMode = window.innerWidth <= 768 ? 'table' : 'split';
     this.render();
   }
 
@@ -82,6 +84,22 @@ export class GanttModal {
               autocomplete="off"
             />
             ${this.searchQuery ? '<button id="gantt-search-clear">&times;</button>' : ''}
+          </div>
+
+          <!-- View Mode Toggle -->
+          <div class="wan-gantt-view-toggle" id="gantt-view-toggle">
+            <button class="wan-gantt-view-btn ${this.viewMode === 'table' ? 'active' : ''}" data-view="table" title="Chỉ xem bảng danh sách công việc">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg>
+              <span>Danh sách</span>
+            </button>
+            <button class="wan-gantt-view-btn ${this.viewMode === 'timeline' ? 'active' : ''}" data-view="timeline" title="Chỉ xem biểu đồ tiến độ Gantt">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <span>Biểu đồ</span>
+            </button>
+            <button class="wan-gantt-view-btn ${this.viewMode === 'split' ? 'active' : ''}" data-view="split" title="Xem song song danh sách và biểu đồ">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18"/></svg>
+              <span>Cả hai</span>
+            </button>
           </div>
 
           <div class="wan-gantt-phase-filters">
@@ -170,6 +188,29 @@ export class GanttModal {
         this.selectedPhase = ph;
         filterPills.forEach((p) => p.classList.toggle('active', p === pill));
         this.renderGanttChart();
+      });
+    });
+
+    // View mode toggle
+    const viewBtns = this.modalOverlay.querySelectorAll('.wan-gantt-view-btn');
+    viewBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const mode = (btn as HTMLElement).dataset.view as 'split' | 'table' | 'timeline';
+        this.viewMode = mode;
+        viewBtns.forEach((b) => b.classList.toggle('active', b === btn));
+        const splitEl = this.modalOverlay?.querySelector('.wan-gantt-split');
+        if (splitEl) {
+          splitEl.classList.remove('view-split', 'view-table', 'view-timeline');
+          splitEl.classList.add(`view-${mode}`);
+        }
+        if (mode === 'timeline') {
+          const timelinePane = this.modalOverlay?.querySelector('#gantt-timeline-pane') as HTMLElement | null;
+          const pin = timelinePane?.querySelector('.wan-realtime-header-pin') as HTMLElement | null;
+          if (timelinePane && pin) {
+            const left = parseFloat(pin.style.left) || 0;
+            timelinePane.scrollLeft = Math.max(0, left - timelinePane.clientWidth / 2);
+          }
+        }
       });
     });
   }
@@ -423,7 +464,7 @@ export class GanttModal {
       .join('');
 
     bodyContainer.innerHTML = `
-      <div class="wan-gantt-split">
+      <div class="wan-gantt-split view-${this.viewMode}">
         <!-- Left Table -->
         <div class="wan-gantt-table-pane">
           <div class="wan-gantt-table-header">
@@ -507,37 +548,51 @@ export class GanttModal {
       });
     }
 
-    // Attach Bar Hover Tooltip
+    // Attach Bar Hover & Tap Tooltip
     const tooltip = bodyContainer.querySelector('#gantt-tooltip') as HTMLElement | null;
     if (tooltip) {
       const bars = bodyContainer.querySelectorAll('.wan-gantt-bar');
+      const showTooltip = (el: HTMLElement) => {
+        const stt = el.dataset.tipStt || '';
+        const name = el.dataset.tipName || '';
+        const start = el.dataset.tipStart || '';
+        const end = el.dataset.tipEnd || '';
+        const days = el.dataset.tipDays || '';
+        const unit = el.dataset.tipUnit || '';
+        const coord = el.dataset.tipCoord || '';
+
+        tooltip.innerHTML = `
+          <div class="wan-gtip-title">${stt ? `[${stt}] ` : ''}${name}</div>
+          <div class="wan-gtip-row"><span>Thời gian:</span> <strong>${start} &rarr; ${end} (${days} ngày)</strong></div>
+          ${unit ? `<div class="wan-gtip-row"><span>Đơn vị thực hiện:</span> <strong>${unit}</strong></div>` : ''}
+          ${coord ? `<div class="wan-gtip-row"><span>Phối hợp:</span> <strong>${coord}</strong></div>` : ''}
+        `;
+        tooltip.classList.remove('hidden');
+
+        const rect = el.getBoundingClientRect();
+        const center = rect.left + rect.width / 2;
+        const clampedLeft = Math.max(160, Math.min(window.innerWidth - 160, center));
+        tooltip.style.left = `${clampedLeft}px`;
+        const clampedTop = Math.max(50, rect.top - 8);
+        tooltip.style.top = `${clampedTop}px`;
+      };
+
       bars.forEach((bar) => {
-        bar.addEventListener('mouseenter', (e) => {
-          const el = bar as HTMLElement;
-          const stt = el.dataset.tipStt || '';
-          const name = el.dataset.tipName || '';
-          const start = el.dataset.tipStart || '';
-          const end = el.dataset.tipEnd || '';
-          const days = el.dataset.tipDays || '';
-          const unit = el.dataset.tipUnit || '';
-          const coord = el.dataset.tipCoord || '';
-
-          tooltip.innerHTML = `
-            <div class="wan-gtip-title">${stt ? `[${stt}] ` : ''}${name}</div>
-            <div class="wan-gtip-row"><span>Thời gian:</span> <strong>${start} &rarr; ${end} (${days} ngày)</strong></div>
-            ${unit ? `<div class="wan-gtip-row"><span>Đơn vị thực hiện:</span> <strong>${unit}</strong></div>` : ''}
-            ${coord ? `<div class="wan-gtip-row"><span>Phối hợp:</span> <strong>${coord}</strong></div>` : ''}
-          `;
-          tooltip.classList.remove('hidden');
-
-          const rect = el.getBoundingClientRect();
-          tooltip.style.left = `${rect.left + rect.width / 2}px`;
-          tooltip.style.top = `${rect.top - 8}px`;
+        const el = bar as HTMLElement;
+        bar.addEventListener('mouseenter', () => showTooltip(el));
+        bar.addEventListener('click', (e) => {
+          e.stopPropagation();
+          showTooltip(el);
         });
-
         bar.addEventListener('mouseleave', () => {
           tooltip.classList.add('hidden');
         });
+      });
+
+      bodyContainer.addEventListener('click', (e) => {
+        if (!(e.target as Element)?.closest?.('.wan-gantt-bar')) {
+          tooltip.classList.add('hidden');
+        }
       });
     }
 
