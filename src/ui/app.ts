@@ -408,15 +408,7 @@ export class WanApp {
     regionBtns.forEach((btn) => {
       btn.addEventListener('click', () => {
         const regId = (btn as HTMLElement).dataset.region as RegionId;
-        this.activeRegion = regId;
-        regionBtns.forEach((b) => b.classList.toggle('active', b === btn));
-        const preset = REGION_PRESETS.find((r) => r.id === regId);
-        if (preset) {
-          this.zoomToBounds(preset.bounds, true);
-        }
-        if (this.activeSidebarTab === 'stations') {
-          this.renderSidebarContent();
-        }
+        this.selectRegion(regId, true);
       });
     });
 
@@ -442,7 +434,7 @@ export class WanApp {
       this.zoomByFactor(0.8);
     });
     this.container.querySelector('#btn-zoom-fit')?.addEventListener('click', () => {
-      this.zoomToBounds(REGION_PRESETS[0].bounds, true);
+      this.selectRegion('all', true);
     });
     this.container.querySelector('#btn-zoom-100')?.addEventListener('click', () => {
       const rect = this.canvasWrapper.getBoundingClientRect();
@@ -703,7 +695,7 @@ export class WanApp {
       } else if (e.key === '-') {
         this.zoomByFactor(0.82);
       } else if (e.key === 'f' || e.key === 'F') {
-        this.zoomToBounds(REGION_PRESETS[0].bounds, true);
+        this.selectRegion('all', true);
       } else if (e.key === '0') {
         const rect = this.canvasWrapper.getBoundingClientRect();
         this.animateViewport({
@@ -1044,8 +1036,7 @@ export class WanApp {
       body.querySelectorAll('.wan-region-stat-row').forEach((row) => {
         row.addEventListener('click', () => {
           const rId = (row as HTMLElement).dataset.region as RegionId;
-          const preset = REGION_PRESETS.find((r) => r.id === rId);
-          if (preset) this.zoomToBounds(preset.bounds, true);
+          this.selectRegion(rId, true);
         });
       });
     }
@@ -1459,6 +1450,22 @@ export class WanApp {
       x: cx - diagX * newScale,
       y: cy - diagY * newScale,
     });
+  }
+
+  public selectRegion(regId: RegionId, animate: boolean = true): void {
+    this.activeRegion = regId;
+    const regionBtns = this.container.querySelectorAll('.wan-region-pill');
+    regionBtns.forEach((b) => {
+      const match = (b as HTMLElement).dataset.region === regId;
+      b.classList.toggle('active', match);
+    });
+    const preset = REGION_PRESETS.find((r) => r.id === regId);
+    if (preset) {
+      this.zoomToBounds(preset.bounds, animate);
+    }
+    if (this.activeSidebarTab === 'stations') {
+      this.renderSidebarContent();
+    }
   }
 
   private zoomToBounds(

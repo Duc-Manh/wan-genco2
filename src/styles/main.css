@@ -335,9 +335,17 @@ body,
 }
 
 .wan-region-pill.active {
-  background: #0f172a;
+  background: #2563eb;
   color: #ffffff;
-  border-color: #0f172a;
+  border-color: #2563eb;
+  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.35);
+  font-weight: 700;
+}
+
+.wan-region-pill.active:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+  color: #ffffff;
 }
 
 .wan-region-spacer {
