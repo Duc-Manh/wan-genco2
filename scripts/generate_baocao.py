@@ -1,5 +1,7 @@
 import zipfile
 import os
+import sys
+import json
 
 def create_xlsx(filepath, headers, rows):
     content_types = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -87,8 +89,18 @@ if __name__ == "__main__":
     headers = ["time", "content", "status"]
     rows = []
 
+    if len(sys.argv) > 1 and sys.argv[1] == "--json":
+        raw = sys.argv[2] if len(sys.argv) > 2 else sys.stdin.read()
+        try:
+            items = json.loads(raw)
+            if isinstance(items, list):
+                rows = [[item.get("time", ""), item.get("content", ""), item.get("status", "")] for item in items]
+        except Exception as e:
+            print(f"Error parsing JSON: {e}", file=sys.stderr)
+            sys.exit(1)
+
     create_xlsx("baocao.xlsx", headers, rows)
     create_xlsx("assets/baocao.xlsx", headers, rows)
     create_xlsx("dist/baocao.xlsx", headers, rows)
-    print("Created empty baocao.xlsx successfully!")
+    print(f"Created baocao.xlsx with {len(rows)} rows successfully!")
 

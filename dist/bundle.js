@@ -1644,7 +1644,7 @@ class DeploymentModal {
     this.container = container;
   }
 
-         open()       {
+         async open()                {
     if (!this.modalOverlay) {
       this.modalOverlay = document.createElement('div');
       this.modalOverlay.className = 'wan-deploy-overlay';
@@ -1660,6 +1660,20 @@ class DeploymentModal {
 
     this.isAddingRow = false;
     this.editingId = null;
+
+    // Tải đồng bộ mới nhất từ server nếu có
+    try {
+      const res = await fetch('/api/baocao');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          BaocaoStore.saveItems(data);
+        }
+      }
+    } catch {
+      // Giữ nguyên dữ liệu hiện tại
+    }
+
     this.render();
 
     requestAnimationFrame(() => {
@@ -1777,7 +1791,7 @@ class DeploymentModal {
                       <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
                     </svg>
                   </button>
-                  <button class="wan-dp-action-icon danger btn-delete-row" data-id="${item.id}" title="Xóa hàng">
+                  <button class="wan-dp-action-icon danger btn-delete-row" data-id="${item.id}" title="Xóa hàng trong baocao.xlsx">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <polyline points="3 6 5 6 21 6"/>
                       <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
@@ -1894,7 +1908,7 @@ class DeploymentModal {
     });
 
     // Button Save New Row
-    this.modalOverlay.querySelector('#btn-save-new-row')?.addEventListener('click', () => {
+    this.modalOverlay.querySelector('#btn-save-new-row')?.addEventListener('click', async () => {
       const timeInput = this.modalOverlay?.querySelector('#input-new-time')                           ;
       const contentInput = this.modalOverlay?.querySelector('#input-new-content')                           ;
       const statusSelect = this.modalOverlay?.querySelector('#select-new-status')                            ;
@@ -1916,6 +1930,8 @@ class DeploymentModal {
 
       this.isAddingRow = false;
       this.render();
+      await this.syncBaocaoToFile();
+      this.showNotice('Đã thêm dòng mới vào baocao.xlsx');
     });
 
     // Button Cancel New Row
@@ -1938,7 +1954,7 @@ class DeploymentModal {
 
     // Button Save Edit Row
     this.modalOverlay.querySelectorAll('.btn-save-edit').forEach((btn) => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         const id = (btn               ).dataset.id;
         if (!id) return;
 
@@ -1959,6 +1975,8 @@ class DeploymentModal {
 
         this.editingId = null;
         this.render();
+        await this.syncBaocaoToFile();
+        this.showNotice('Đã cập nhật hàng trong baocao.xlsx');
       });
     });
 
@@ -1972,11 +1990,27 @@ class DeploymentModal {
 
     // Button Delete Row
     this.modalOverlay.querySelectorAll('.btn-delete-row').forEach((btn) => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         const id = (btn               ).dataset.id;
-        if (id && confirm('Bạn có chắc chắn muốn xóa dòng báo cáo này?')) {
+        if (!id) return;
+
+        const items = BaocaoStore.getItems();
+        const itemToDelete = items.find((i) => i.id === id);
+
+        const confirmMsg = itemToDelete
+          ? `Bạn có chắc chắn muốn xóa dòng báo cáo này khỏi baocao.xlsx?\n\n• Thời gian: ${itemToDelete.time}\n• Nội dung: ${itemToDelete.content}\n• Trạng thái: ${itemToDelete.status}`
+          : 'Bạn có chắc chắn muốn xóa dòng báo cáo này khỏi baocao.xlsx?';
+
+        if (confirm(confirmMsg)) {
+          // 1. Xóa khỏi kho dữ liệu BaocaoStore
           BaocaoStore.deleteItem(id);
+
+          // 2. Đồng bộ cập nhật xóa hàng tương ứng trong file baocao.xlsx
+          await this.syncBaocaoToFile();
+
+          // 3. Render lại bảng hiển thị
           this.render();
+          this.showNotice('Đã xóa hàng tương ứng trong baocao.xlsx');
         }
       });
     });
@@ -1985,6 +2019,40 @@ class DeploymentModal {
     this.modalOverlay.querySelector('#btn-download-baocao')?.addEventListener('click', () => {
       this.downloadExcelFile();
     });
+  }
+
+  // Đồng bộ cập nhật toàn bộ danh sách sang file baocao.xlsx
+          async syncBaocaoToFile()                {
+    const items = BaocaoStore.getItems();
+    try {
+      await fetch('/api/baocao', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(items),
+      });
+    } catch {
+      // Offline / standalone browser mode: localStorage is already updated
+    }
+  }
+
+  // Hiển thị thông báo toast nhanh cho người dùng
+          showNotice(message        )       {
+    const existing = document.querySelector('.wan-deploy-toast');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.className = 'wan-deploy-toast';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    requestAnimationFrame(() => {
+      toast.classList.add('show');
+    });
+
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 250);
+    }, 2500);
   }
 
   // Generate and download actual baocao.xlsx

@@ -2313,3 +2313,27 @@ body,
   color: #94a3b8;
   font-style: italic;
 }
+
+.wan-deploy-toast {
+  position: fixed;
+  bottom: 80px;
+  right: 24px;
+  background: #0f172a;
+  color: #f8fafc;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+  border: 1px solid #334155;
+  z-index: 10005;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.25s ease;
+  pointer-events: none;
+}
+
+.wan-deploy-toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
