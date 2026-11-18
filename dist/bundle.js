@@ -546,7 +546,7 @@ function buildDiagramSvg(
   gridRect.setAttribute('pointer-events', 'none');
   viewportGroup.appendChild(gridRect);
 
-  // Combine vertices and edges in exact Z-order, keeping frame & boundaries behind interactive nodes
+  // Combine vertices and edges in exact Z-order, keeping frame và boundaries behind interactive nodes
                    
                                                            
                                                         
@@ -842,7 +842,7 @@ class GanttModal {
             .join('')}
         </div>
 
-        <!-- Filter & Search Toolbar -->
+        <!-- Filter và Search Toolbar -->
         <div class="wan-gantt-toolbar">
           <div class="wan-gantt-search">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1124,7 +1124,7 @@ class GanttModal {
       }
     };
 
-    // Build Table Rows & Timeline Rows
+    // Build Table Rows và Timeline Rows
     let tableRowsHtml = '';
     let timelineRowsHtml = '';
 
@@ -1152,7 +1152,7 @@ class GanttModal {
         </div>
       `;
 
-      // Timeline Row & Bar
+      // Timeline Row và Bar
       let barHtml = '';
       if (t.start && t.end) {
         const sMs = new Date(t.start).getTime();
@@ -1185,7 +1185,7 @@ class GanttModal {
       `;
     });
 
-    // Month headers & grid
+    // Month headers và grid
     const monthHeadersHtml = months
       .map(
         (m) => `
@@ -1406,11 +1406,11 @@ const CATEGORY_LABELS                         = {
 
 const REGION_LABELS                           = {
   all: 'Toàn mạng',
-  north: 'Miền Bắc & Bắc Trung Bộ',
+  north: 'Miền Bắc và Bắc Trung Bộ',
   'north-central': 'Bắc Trung Bộ (Cụm Quảng Trị)',
   central: 'Trung Trung Bộ (Quảng Nam - Đà Nẵng)',
-  'south-central': 'Nam Trung Bộ & Tây Nguyên',
-  south: 'Miền Nam & ĐBSCL',
+  'south-central': 'Nam Trung Bộ và Tây Nguyên',
+  south: 'Miền Nam và ĐBSCL',
   legend: 'Bảng Ghi Chú',
 };
 class WanApp {
@@ -1492,7 +1492,7 @@ class WanApp {
             <img src="./assets/logo.png" alt="EVNGENCO2" class="wan-brand-logo" />
             <div class="wan-brand-titles">
               <h1>SƠ ĐỒ MẠNG TRUYỀN DẪN VIỄN THÔNG EVNGENCO2</h1>
-              <span class="wan-subtitle">Bản vẽ kỹ thuật số hóa tương tác TypeScript • ${STATIONS.length} Trạm &amp; Nhà máy • ${this.vertices.length} Phần tử • ${this.edges.length} Tuyến kết nối</span>
+              <span class="wan-subtitle">Bản vẽ kỹ thuật số hóa tương tác TypeScript • ${STATIONS.length} Trạm và Nhà máy • ${this.vertices.length} Phần tử • ${this.edges.length} Tuyến kết nối</span>
             </div>
           </div>
 
@@ -1550,7 +1550,7 @@ class WanApp {
           `
     ).join('')}
           <div class="wan-region-spacer"></div>
-          <span class="wan-hint-text">Cuộn chuột để Phóng to/Thu nhỏ • Kéo chuột để Di chuyển • Nhấn vào Thiết bị/Tuyến cáp để xem &amp; sửa</span>
+          <span class="wan-hint-text">Cuộn chuột để Phóng to/Thu nhỏ • Kéo chuột để Di chuyển • Nhấn vào Thiết bị/Tuyến cáp để xem và sửa</span>
         </nav>
 
         <!-- Sub Navigation Bar -->
@@ -1573,7 +1573,7 @@ class WanApp {
               </svg>
             </button>
             <div class="wan-sidebar-tabs">
-              <button class="wan-tab-btn active" data-tab="legend">Ghi chú &amp; Lọc</button>
+              <button class="wan-tab-btn active" data-tab="legend">Ghi chú và Lọc</button>
               <button class="wan-tab-btn" data-tab="stations">Trạm (${STATIONS.length})</button>
               <button class="wan-tab-btn" data-tab="stats">Thống kê</button>
             </div>
@@ -1645,7 +1645,7 @@ class WanApp {
       this.minimapSvg.appendChild(line);
     }
 
-    // Draw boundary boxes & nodes in minimap
+    // Draw boundary boxes và nodes in minimap
     for (const v of this.vertices) {
       if (v.category === 'frame') continue;
       if (v.category === 'boundary' || v.id === '2') {
@@ -1736,7 +1736,7 @@ class WanApp {
       });
     });
 
-    // Zoom & View buttons
+    // Zoom và View buttons
     this.container.querySelector('#btn-zoom-in')?.addEventListener('click', () => {
       this.zoomByFactor(1.25);
     });
@@ -1817,7 +1817,7 @@ class WanApp {
       }
     });
 
-    // Canvas Mouse Pan & Wheel Zoom
+    // Canvas Mouse Pan và Wheel Zoom
     this.canvasWrapper.addEventListener(
       'wheel',
       (e            ) => {

@@ -1,7 +1,7 @@
 {
   "name": "wan-network-diagram-ts",
   "version": "1.0.0",
-  "description": "Giao diện sơ đồ mạng truyền dẫn WAN (GENCO2 & EVNICT) viết bằng TypeScript",
+  "description": "Giao diện sơ đồ mạng truyền dẫn WAN (GENCO2 và EVNICT) viết bằng TypeScript",
   "type": "module",
   "engines": {
     "node": ">=22.6.0"

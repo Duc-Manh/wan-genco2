@@ -67,7 +67,7 @@ export class GanttModal {
             .join('')}
         </div>
 
-        <!-- Filter & Search Toolbar -->
+        <!-- Filter và Search Toolbar -->
         <div class="wan-gantt-toolbar">
           <div class="wan-gantt-search">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -349,7 +349,7 @@ export class GanttModal {
       }
     };
 
-    // Build Table Rows & Timeline Rows
+    // Build Table Rows và Timeline Rows
     let tableRowsHtml = '';
     let timelineRowsHtml = '';
 
@@ -377,7 +377,7 @@ export class GanttModal {
         </div>
       `;
 
-      // Timeline Row & Bar
+      // Timeline Row và Bar
       let barHtml = '';
       if (t.start && t.end) {
         const sMs = new Date(t.start).getTime();
@@ -410,7 +410,7 @@ export class GanttModal {
       `;
     });
 
-    // Month headers & grid
+    // Month headers và grid
     const monthHeadersHtml = months
       .map(
         (m) => `

@@ -223,7 +223,7 @@ export function buildDiagramSvg(
   gridRect.setAttribute('pointer-events', 'none');
   viewportGroup.appendChild(gridRect);
 
-  // Combine vertices and edges in exact Z-order, keeping frame & boundaries behind interactive nodes
+  // Combine vertices and edges in exact Z-order, keeping frame và boundaries behind interactive nodes
                    
                                                            
                                                         
