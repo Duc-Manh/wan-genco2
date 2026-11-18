@@ -168,8 +168,7 @@ export class DeploymentModal {
           <div class="wan-deploy-title-group">
             <div class="wan-deploy-badge">TRIỂN KHAI THỰC TẾ</div>
             <div>
-              <h3 id="deploy-modal-title">BÁO CÁO TIẾN ĐỘ THI CÔNG VÀ LẮP ĐẶT THỰC ĐỊA</h3>
-              <div class="wan-deploy-subtitle">Dữ liệu đồng bộ file <code>baocao.xlsx</code> &bull; ${items.length} báo cáo &bull; Sắp xếp mới nhất lên đầu</div>
+              <h3 id="deploy-modal-title">Báo cáo tiến độ thực tế</h3>
             </div>
           </div>
 
@@ -432,3 +431,4 @@ export class DeploymentModal {
     }, 100);
   }
 }
+
