@@ -127,10 +127,9 @@ export class BangThongModal {
       <div class="wan-gantt-modal wan-bangthong-modal" role="dialog" aria-modal="true" aria-labelledby="bt-modal-title">
         <!-- Header -->
         <div class="wan-gantt-header" style="background: #1e3a8a;">
-          <div class="wan-gantt-brand">
-            <div class="wan-gantt-badge" style="background: transparent; border: none;">BĂNG THÔNG DỰ ÁN</div>
+          <div class="wan-gantt-brand" style="gap: 0;">
             <div>
-              <h2 id="bt-modal-title">THÔNG TIN BĂNG THÔNG CÁC TUYẾN QUANG DỰ ÁN WAN EVNGENCO2</h2>
+              <h2 id="bt-modal-title" style="margin: 0; text-align: left;">THÔNG TIN BĂNG THÔNG CÁC TUYẾN QUANG DỰ ÁN WAN EVNGENCO2</h2>
             </div>
           </div>
           <div style="display:flex; align-items:center; gap:8px;">
