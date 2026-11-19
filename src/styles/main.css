@@ -1025,6 +1025,82 @@ body,
   color: #ffffff;
 }
 
+.wan-inspector-actions .wan-btn-success {
+  background: #10b981;
+  border-color: #059669;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.wan-inspector-actions .wan-btn-success:hover {
+  background: #059669;
+}
+
+.wan-field select.wan-select {
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  font-size: 12px;
+  background: #ffffff;
+  color: #0f172a;
+  outline: none;
+}
+
+.wan-field select.wan-select:focus {
+  border-color: #2563eb;
+}
+
+.wan-auth-badge-admin {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.wan-auth-lock-card {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+
+.wan-auth-lock-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.wan-auth-lock-desc {
+  font-size: 11.5px;
+  color: #64748b;
+  margin: 6px 0 0 0;
+  line-height: 1.45;
+}
+
+.wan-tooltip-admin-tag {
+  font-size: 10px;
+  background: rgba(37, 99, 235, 0.3);
+  color: #93c5fd;
+  border: 1px solid rgba(147, 197, 253, 0.4);
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-left: 6px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
 .wan-nearby-list {
   display: flex;
   flex-direction: column;

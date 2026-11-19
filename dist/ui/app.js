@@ -15,7 +15,18 @@ import {
 import { buildDiagramSvg } from '../renderer/svgDiagram.js';
 import { GanttModal } from './ganttModal.js';
 import { DeploymentModal } from './deploymentModal.js';
-import { AuthWidget } from './authWidget.js';
+import { AuthWidget, AuthManager } from './authWidget.js';
+
+                             
+                     
+                                            
+                    
+                     
+                       
+                       
+             
+             
+ 
 
                         
                
@@ -145,7 +156,75 @@ export class WanApp {
     // Clone data so live edits can be reset if desired
     this.vertices = structuredClone(VERTICES);
     this.edges = structuredClone(EDGES);
+    this.loadCustomEdits();
     this.rebuildLookupMaps();
+  }
+
+          loadCustomEdits()       {
+    try {
+      const raw = localStorage.getItem('wan_custom_elements_v1');
+      if (!raw) return;
+      const edits                                    = JSON.parse(raw);
+      for (const v of this.vertices) {
+        if (edits[v.id]) {
+          const edit = edits[v.id];
+          if (edit.plainText !== undefined) {
+            v.plainText = edit.plainText;
+            if (v.lines.length > 0 && v.lines[0].runs.length > 0) {
+              v.lines[0].runs[0].text = edit.plainText;
+            }
+          }
+          if (edit.category) v.category = edit.category                  ;
+          if (edit.region) v.region = edit.region;
+          if (edit.fillColor !== undefined) v.fillColor = edit.fillColor;
+          if (edit.strokeColor !== undefined) v.strokeColor = edit.strokeColor;
+          if (edit.strokeWidth !== undefined) v.strokeWidth = edit.strokeWidth;
+          if (edit.x !== undefined) v.x = edit.x;
+          if (edit.y !== undefined) v.y = edit.y;
+        }
+      }
+      for (const e of this.edges) {
+        if (edits[e.id]) {
+          const edit = edits[e.id];
+          if (edit.plainText !== undefined) {
+            e.labelPlainText = edit.plainText;
+            if (e.labelLines.length > 0 && e.labelLines[0].runs.length > 0) {
+              e.labelLines[0].runs[0].text = edit.plainText;
+            }
+          }
+          if (edit.category) e.category = edit.category                 ;
+          if (edit.region) e.region = edit.region;
+          if (edit.strokeColor !== undefined) e.strokeColor = edit.strokeColor;
+          if (edit.strokeWidth !== undefined) e.strokeWidth = edit.strokeWidth;
+        }
+      }
+    } catch {}
+  }
+
+          saveCustomEdit(id        , edit                   )       {
+    try {
+      const raw = localStorage.getItem('wan_custom_elements_v1') || '{}';
+      const edits = JSON.parse(raw);
+      edits[id] = { ...(edits[id] || {}), ...edit };
+      localStorage.setItem('wan_custom_elements_v1', JSON.stringify(edits));
+    } catch {}
+  }
+
+          resetCustomEdit(id        )       {
+    try {
+      const raw = localStorage.getItem('wan_custom_elements_v1') || '{}';
+      const edits = JSON.parse(raw);
+      delete edits[id];
+      localStorage.setItem('wan_custom_elements_v1', JSON.stringify(edits));
+      this.vertices = structuredClone(VERTICES);
+      this.edges = structuredClone(EDGES);
+      this.loadCustomEdits();
+      this.rebuildLookupMaps();
+      this.initDiagramSvg();
+      this.updateViewportTransform();
+      this.renderInspector();
+      this.renderSidebarContent();
+    } catch {}
   }
 
           rebuildLookupMaps()       {
@@ -232,13 +311,7 @@ export class WanApp {
             <div class="wan-btn-group">
               <button id="btn-export-svg" class="wan-tool-btn wan-btn-primary" title="Tải xuống file vector SVG">Xuất SVG</button>
               <button id="btn-export-png" class="wan-tool-btn" title="Tải xuống ảnh PNG độ phân giải cao">Xuất PNG</button>
-            </div>
-
-            <div class="wan-btn-group">
-              <button id="btn-header-logout" class="wan-tool-btn wan-btn-logout" title="Đăng xuất khỏi hệ thống">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                <span>Đăng xuất</span>
-              </button>
+              <button id="btn-export-excel" class="wan-tool-btn" title="Tải xuống file dữ liệu các phần tử infor.xlsx">Xuất Excel</button>
             </div>
           </div>
         </header>
@@ -481,10 +554,13 @@ export class WanApp {
     this.container.querySelector('#btn-export-png')?.addEventListener('click', () => {
       this.exportPng();
     });
-    this.container.querySelector('#btn-header-logout')?.addEventListener('click', () => {
-      if (confirm('Bạn có chắc chắn muốn đăng xuất khỏi hệ thống?')) {
-        window.dispatchEvent(new CustomEvent('wan:logout'));
-      }
+    this.container.querySelector('#btn-export-excel')?.addEventListener('click', () => {
+      const a = document.createElement('a');
+      a.href = '/infor.xlsx';
+      a.download = 'infor.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     });
 
     // Global search input
@@ -721,6 +797,11 @@ export class WanApp {
         this.applyVisualState();
         this.renderSidebarContent();
       }
+    });
+
+    // Lắng nghe thay đổi quyền Quản trị viên để cập nhật tức thì khả năng chỉnh sửa khung thông tin
+    window.addEventListener('wan:auth-changed', () => {
+      this.renderInspector();
     });
   }
 
@@ -1136,6 +1217,7 @@ export class WanApp {
     inspector.classList.remove('hidden');
 
     if (v) {
+      const isAuthed = AuthManager.isAuthenticated();
       // Find nearby elements within 280px
       const cx = v.x + v.width / 2;
       const cy = v.y + v.height / 2;
@@ -1179,35 +1261,71 @@ export class WanApp {
           </div>
 
           <div class="wan-edit-section">
-            <h4>Chỉnh sửa trực tiếp (Live Edit)</h4>
-            <label class="wan-field">
-              <span>Nhãn hiển thị</span>
-              <input id="edit-v-text" type="text" value="${v.plainText.replace(/"/g, '&quot;')}" />
-            </label>
-            <div class="wan-field-row">
+            ${
+              isAuthed
+                ? `
+              <div class="wan-auth-badge-admin">👑 Quyền: Quản trị viên (Được phép sửa)</div>
               <label class="wan-field">
-                <span>Màu nền</span>
-                <input id="edit-v-fill" type="color" value="${v.fillColor.startsWith('#') && v.fillColor.length === 7 ? v.fillColor : '#ffffff'}" />
+                <span>Nhãn hiển thị (Title)</span>
+                <input id="edit-v-text" type="text" value="${v.plainText.replace(/"/g, '&quot;')}" />
               </label>
               <label class="wan-field">
-                <span>Màu viền</span>
-                <input id="edit-v-stroke" type="color" value="${v.strokeColor.startsWith('#') && v.strokeColor.length === 7 ? v.strokeColor : '#000000'}" />
+                <span>Phân loại thiết bị</span>
+                <select id="edit-v-category" class="wan-select">
+                  ${Object.entries(CATEGORY_LABELS)
+                    .filter(([cat]) => !cat.startsWith('cable-') && cat !== 'frame')
+                    .map(([cat, label]) => `<option value="${cat}" ${v.category === cat ? 'selected' : ''}>${label}</option>`)
+                    .join('')}
+                </select>
               </label>
-            </div>
-            <div class="wan-field-row">
               <label class="wan-field">
-                <span>Tọa độ X</span>
-                <input id="edit-v-x" type="number" value="${v.x}" />
+                <span>Khu vực</span>
+                <select id="edit-v-region" class="wan-select">
+                  ${Object.entries(REGION_LABELS)
+                    .map(([reg, label]) => `<option value="${reg}" ${v.region === reg ? 'selected' : ''}>${label}</option>`)
+                    .join('')}
+                </select>
               </label>
-              <label class="wan-field">
-                <span>Tọa độ Y</span>
-                <input id="edit-v-y" type="number" value="${v.y}" />
-              </label>
-            </div>
-            <div class="wan-inspector-actions">
-              <button id="btn-focus-selected" class="wan-tool-btn wan-btn-primary">Phóng tới phần tử</button>
-              <button id="btn-apply-edit" class="wan-tool-btn">Cập nhật</button>
-            </div>
+              <div class="wan-field-row">
+                <label class="wan-field">
+                  <span>Màu nền</span>
+                  <input id="edit-v-fill" type="color" value="${v.fillColor.startsWith('#') && v.fillColor.length === 7 ? v.fillColor : '#ffffff'}" />
+                </label>
+                <label class="wan-field">
+                  <span>Màu viền</span>
+                  <input id="edit-v-stroke" type="color" value="${v.strokeColor.startsWith('#') && v.strokeColor.length === 7 ? v.strokeColor : '#000000'}" />
+                </label>
+              </div>
+              <div class="wan-field-row">
+                <label class="wan-field">
+                  <span>Tọa độ X</span>
+                  <input id="edit-v-x" type="number" value="${v.x}" />
+                </label>
+                <label class="wan-field">
+                  <span>Tọa độ Y</span>
+                  <input id="edit-v-y" type="number" value="${v.y}" />
+                </label>
+              </div>
+              <div class="wan-inspector-actions">
+                <button id="btn-focus-selected" class="wan-tool-btn wan-btn-primary">Phóng tới phần tử</button>
+                <button id="btn-apply-edit" class="wan-tool-btn wan-btn-success">Lưu &amp; Cập nhật</button>
+                <button id="btn-reset-edit" class="wan-tool-btn" title="Khôi phục thông tin gốc">Đặt lại</button>
+              </div>
+            `
+                : `
+              <div class="wan-auth-lock-card">
+                <div class="wan-auth-lock-title">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  <span>Chế độ chỉ xem (Khóa chỉnh sửa)</span>
+                </div>
+                <p class="wan-auth-lock-desc">Đăng nhập với <strong>Quyền: Quản trị viên</strong> để chỉnh sửa tên, phân loại, khu vực và màu sắc của phần tử này.</p>
+                <button id="btn-prompt-login" class="wan-tool-btn wan-btn-primary" style="width: 100%; margin-top: 8px;">Đăng nhập Quản trị viên</button>
+              </div>
+              <div class="wan-inspector-actions">
+                <button id="btn-focus-selected" class="wan-tool-btn wan-btn-primary" style="width: 100%;">Phóng tới phần tử</button>
+              </div>
+            `
+            }
           </div>
 
           ${nearby.length > 0
@@ -1239,14 +1357,24 @@ export class WanApp {
       inspector.querySelector('#btn-focus-selected')?.addEventListener('click', () => {
         this.focusOnElement(v.id);
       });
+      inspector.querySelector('#btn-prompt-login')?.addEventListener('click', () => {
+        (this.container.querySelector('#wan-btn-auth-toggle')                      )?.click();
+      });
+      inspector.querySelector('#btn-reset-edit')?.addEventListener('click', () => {
+        this.resetCustomEdit(v.id);
+      });
       inspector.querySelector('#btn-apply-edit')?.addEventListener('click', () => {
         const newText = (inspector.querySelector('#edit-v-text')                    ).value.trim();
+        const newCat = (inspector.querySelector('#edit-v-category')                     ).value                  ;
+        const newReg = (inspector.querySelector('#edit-v-region')                     ).value            ;
         const newFill = (inspector.querySelector('#edit-v-fill')                    ).value;
         const newStroke = (inspector.querySelector('#edit-v-stroke')                    ).value;
         const newX = Number((inspector.querySelector('#edit-v-x')                    ).value);
         const newY = Number((inspector.querySelector('#edit-v-y')                    ).value);
 
         v.plainText = newText;
+        v.category = newCat;
+        v.region = newReg;
         if (v.lines.length > 0 && v.lines[0].runs.length > 0) {
           const baseRun = v.lines[0].runs[0];
           v.lines = [{ align: v.align, runs: [{ ...baseRun, text: newText }] }];
@@ -1272,9 +1400,20 @@ export class WanApp {
         v.x = newX;
         v.y = newY;
 
+        this.saveCustomEdit(v.id, {
+          plainText: newText,
+          category: newCat,
+          region: newReg,
+          fillColor: newFill,
+          strokeColor: newStroke,
+          x: newX,
+          y: newY,
+        });
+
         this.initDiagramSvg();
         this.updateViewportTransform();
         this.renderInspector();
+        this.renderSidebarContent();
       });
 
       inspector.querySelectorAll('.wan-nearby-item').forEach((btn) => {
@@ -1285,6 +1424,7 @@ export class WanApp {
         });
       });
     } else if (e) {
+      const isAuthed = AuthManager.isAuthenticated();
       const lengthPx = Math.round(Math.hypot(e.targetX - e.sourceX, e.targetY - e.sourceY));
       inspector.innerHTML = `
         <div class="wan-inspector-header">
@@ -1320,25 +1460,61 @@ export class WanApp {
           </div>
 
           <div class="wan-edit-section">
-            <h4>Chỉnh sửa tuyến kết nối</h4>
-            <label class="wan-field">
-              <span>Nhãn dung lượng / Tuyến cáp</span>
-              <input id="edit-e-text" type="text" value="${e.labelPlainText.replace(/"/g, '&quot;')}" />
-            </label>
-            <div class="wan-field-row">
+            ${
+              isAuthed
+                ? `
+              <div class="wan-auth-badge-admin">👑 Quyền: Quản trị viên (Được phép sửa)</div>
               <label class="wan-field">
-                <span>Màu tuyến cáp</span>
-                <input id="edit-e-color" type="color" value="${e.strokeColor.startsWith('#') && e.strokeColor.length === 7 ? e.strokeColor : '#0070c0'}" />
+                <span>Nhãn dung lượng / Tuyến cáp</span>
+                <input id="edit-e-text" type="text" value="${e.labelPlainText.replace(/"/g, '&quot;')}" />
               </label>
               <label class="wan-field">
-                <span>Độ dày nét (px)</span>
-                <input id="edit-e-width" type="number" min="1" max="10" value="${e.strokeWidth}" />
+                <span>Phân loại tuyến cáp</span>
+                <select id="edit-e-category" class="wan-select">
+                  ${Object.entries(CATEGORY_LABELS)
+                    .filter(([cat]) => cat.startsWith('cable-'))
+                    .map(([cat, label]) => `<option value="${cat}" ${e.category === cat ? 'selected' : ''}>${label}</option>`)
+                    .join('')}
+                </select>
               </label>
-            </div>
-            <div class="wan-inspector-actions">
-              <button id="btn-focus-selected" class="wan-tool-btn wan-btn-primary">Phóng tới tuyến cáp</button>
-              <button id="btn-apply-edge-edit" class="wan-tool-btn">Cập nhật</button>
-            </div>
+              <label class="wan-field">
+                <span>Khu vực</span>
+                <select id="edit-e-region" class="wan-select">
+                  ${Object.entries(REGION_LABELS)
+                    .map(([reg, label]) => `<option value="${reg}" ${e.region === reg ? 'selected' : ''}>${label}</option>`)
+                    .join('')}
+                </select>
+              </label>
+              <div class="wan-field-row">
+                <label class="wan-field">
+                  <span>Màu tuyến cáp</span>
+                  <input id="edit-e-color" type="color" value="${e.strokeColor.startsWith('#') && e.strokeColor.length === 7 ? e.strokeColor : '#0070c0'}" />
+                </label>
+                <label class="wan-field">
+                  <span>Độ dày nét (px)</span>
+                  <input id="edit-e-width" type="number" min="1" max="10" value="${e.strokeWidth}" />
+                </label>
+              </div>
+              <div class="wan-inspector-actions">
+                <button id="btn-focus-selected" class="wan-tool-btn wan-btn-primary">Phóng tới tuyến cáp</button>
+                <button id="btn-apply-edge-edit" class="wan-tool-btn wan-btn-success">Lưu &amp; Cập nhật</button>
+                <button id="btn-reset-edge-edit" class="wan-tool-btn" title="Khôi phục thông tin gốc">Đặt lại</button>
+              </div>
+            `
+                : `
+              <div class="wan-auth-lock-card">
+                <div class="wan-auth-lock-title">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  <span>Chế độ chỉ xem (Khóa chỉnh sửa)</span>
+                </div>
+                <p class="wan-auth-lock-desc">Đăng nhập với <strong>Quyền: Quản trị viên</strong> để chỉnh sửa nhãn, loại cáp và màu sắc tuyến kết nối.</p>
+                <button id="btn-prompt-login" class="wan-tool-btn wan-btn-primary" style="width: 100%; margin-top: 8px;">Đăng nhập Quản trị viên</button>
+              </div>
+              <div class="wan-inspector-actions">
+                <button id="btn-focus-selected" class="wan-tool-btn wan-btn-primary" style="width: 100%;">Phóng tới tuyến cáp</button>
+              </div>
+            `
+            }
           </div>
         </div>
       `;
@@ -1349,12 +1525,22 @@ export class WanApp {
       inspector.querySelector('#btn-focus-selected')?.addEventListener('click', () => {
         this.focusOnElement(e.id);
       });
+      inspector.querySelector('#btn-prompt-login')?.addEventListener('click', () => {
+        (this.container.querySelector('#wan-btn-auth-toggle')                      )?.click();
+      });
+      inspector.querySelector('#btn-reset-edge-edit')?.addEventListener('click', () => {
+        this.resetCustomEdit(e.id);
+      });
       inspector.querySelector('#btn-apply-edge-edit')?.addEventListener('click', () => {
         const newText = (inspector.querySelector('#edit-e-text')                    ).value.trim();
+        const newCat = (inspector.querySelector('#edit-e-category')                     ).value                 ;
+        const newReg = (inspector.querySelector('#edit-e-region')                     ).value            ;
         const newColor = (inspector.querySelector('#edit-e-color')                    ).value;
         const newW = Number((inspector.querySelector('#edit-e-width')                    ).value);
 
         e.labelPlainText = newText;
+        e.category = newCat;
+        e.region = newReg;
         e.strokeColor = newColor;
         e.strokeWidth = newW;
         if (e.labelLines.length > 0 && e.labelLines[0].runs.length > 0) {
@@ -1378,9 +1564,18 @@ export class WanApp {
           ];
         }
 
+        this.saveCustomEdit(e.id, {
+          plainText: newText,
+          category: newCat,
+          region: newReg,
+          strokeColor: newColor,
+          strokeWidth: newW,
+        });
+
         this.initDiagramSvg();
         this.updateViewportTransform();
         this.renderInspector();
+        this.renderSidebarContent();
       });
     }
   }
@@ -1405,8 +1600,13 @@ export class WanApp {
       ? `${CATEGORY_LABELS[v.category]} • ${REGION_LABELS[v.region]}`
       : `${CATEGORY_LABELS[e?.category || '']} • ${REGION_LABELS[e?.region || 'all']}`;
 
+    const isAuthed = AuthManager.isAuthenticated();
+
     this.tooltipEl.innerHTML = `
-      <div class="wan-tooltip-title">${title}</div>
+      <div class="wan-tooltip-title">
+        <span>${title}</span>
+        ${isAuthed ? '<span class="wan-tooltip-admin-tag" title="Nhấn chuột để chỉnh sửa thông tin">✏️ Quản trị</span>' : ''}
+      </div>
       <div class="wan-tooltip-sub">${subtitle}</div>
     `;
     this.tooltipEl.classList.remove('hidden');
