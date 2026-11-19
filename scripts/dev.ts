@@ -49,10 +49,56 @@ const MIME_TYPES: Record<string, string> = {
   '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
 };
 
+function parseTimeValue(timeStr: string): number {
+  if (!timeStr) return Number.MAX_SAFE_INTEGER;
+  const s = String(timeStr).trim();
+
+  // Pattern 1: DD/MM/YYYY or DD-MM-YYYY, with optional HH:mm[:ss]
+  const dmyMatch = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+  if (dmyMatch) {
+    const day = parseInt(dmyMatch[1], 10);
+    const month = parseInt(dmyMatch[2], 10) - 1;
+    const year = parseInt(dmyMatch[3], 10);
+    const hour = dmyMatch[4] ? parseInt(dmyMatch[4], 10) : 0;
+    const min = dmyMatch[5] ? parseInt(dmyMatch[5], 10) : 0;
+    const sec = dmyMatch[6] ? parseInt(dmyMatch[6], 10) : 0;
+    const d = new Date(year, month, day, hour, min, sec);
+    if (!isNaN(d.getTime())) return d.getTime();
+  }
+
+  // Pattern 2: YYYY-MM-DD or YYYY/MM/DD, with optional HH:mm[:ss]
+  const ymdMatch = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+  if (ymdMatch) {
+    const year = parseInt(ymdMatch[1], 10);
+    const month = parseInt(ymdMatch[2], 10) - 1;
+    const day = parseInt(ymdMatch[3], 10);
+    const hour = ymdMatch[4] ? parseInt(ymdMatch[4], 10) : 0;
+    const min = ymdMatch[5] ? parseInt(ymdMatch[5], 10) : 0;
+    const sec = ymdMatch[6] ? parseInt(ymdMatch[6], 10) : 0;
+    const d = new Date(year, month, day, hour, min, sec);
+    if (!isNaN(d.getTime())) return d.getTime();
+  }
+
+  const parsed = Date.parse(s);
+  if (!isNaN(parsed)) return parsed;
+
+  return Number.MAX_SAFE_INTEGER;
+}
+
+function sortItemsAscending(items: any[]): any[] {
+  if (!Array.isArray(items)) return [];
+  return [...items].sort((a, b) => {
+    const diff = parseTimeValue(a.time) - parseTimeValue(b.time);
+    if (diff !== 0) return diff;
+    return String(a.time || '').localeCompare(String(b.time || ''));
+  });
+}
+
 function readBaocaoJson(): any[] {
   try {
     if (fs.existsSync(DATA_FILE)) {
-      return JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
+      const parsed = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
+      return sortItemsAscending(parsed);
     }
   } catch {}
   return [];
@@ -60,11 +106,12 @@ function readBaocaoJson(): any[] {
 
 function saveBaocaoAndSyncXlsx(items: any[], callback?: () => void) {
   try {
+    const sorted = sortItemsAscending(items);
     fs.mkdirSync(path.dirname(DATA_FILE), { recursive: true });
-    fs.writeFileSync(DATA_FILE, JSON.stringify(items, null, 2), 'utf-8');
+    fs.writeFileSync(DATA_FILE, JSON.stringify(sorted, null, 2), 'utf-8');
     execFile(
       'python3',
-      [path.join(ROOT_DIR, 'scripts', 'generate_baocao.py'), '--json', JSON.stringify(items)],
+      [path.join(ROOT_DIR, 'scripts', 'generate_baocao.py'), '--json', JSON.stringify(sorted)],
       (err) => {
         if (err) console.error('Error updating baocao.xlsx:', err);
         if (callback) callback();

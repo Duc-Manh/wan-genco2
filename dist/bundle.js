@@ -222,6 +222,41 @@ const GANTT_DATA                             = {"BQLDA": {"title": "Ban Quản l
 
 
 // --- src/data/baocaoData.ts ---
+function parseTimeValue(timeStr        )         {
+  if (!timeStr) return Number.MAX_SAFE_INTEGER;
+  const s = String(timeStr).trim();
+
+  // Pattern 1: DD/MM/YYYY or DD-MM-YYYY, with optional HH:mm[:ss]
+  const dmyMatch = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+  if (dmyMatch) {
+    const day = parseInt(dmyMatch[1], 10);
+    const month = parseInt(dmyMatch[2], 10) - 1;
+    const year = parseInt(dmyMatch[3], 10);
+    const hour = dmyMatch[4] ? parseInt(dmyMatch[4], 10) : 0;
+    const min = dmyMatch[5] ? parseInt(dmyMatch[5], 10) : 0;
+    const sec = dmyMatch[6] ? parseInt(dmyMatch[6], 10) : 0;
+    const d = new Date(year, month, day, hour, min, sec);
+    if (!isNaN(d.getTime())) return d.getTime();
+  }
+
+  // Pattern 2: YYYY-MM-DD or YYYY/MM/DD, with optional HH:mm[:ss]
+  const ymdMatch = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+  if (ymdMatch) {
+    const year = parseInt(ymdMatch[1], 10);
+    const month = parseInt(ymdMatch[2], 10) - 1;
+    const day = parseInt(ymdMatch[3], 10);
+    const hour = ymdMatch[4] ? parseInt(ymdMatch[4], 10) : 0;
+    const min = ymdMatch[5] ? parseInt(ymdMatch[5], 10) : 0;
+    const sec = ymdMatch[6] ? parseInt(ymdMatch[6], 10) : 0;
+    const d = new Date(year, month, day, hour, min, sec);
+    if (!isNaN(d.getTime())) return d.getTime();
+  }
+
+  const parsed = Date.parse(s);
+  if (!isNaN(parsed)) return parsed;
+
+  return Number.MAX_SAFE_INTEGER;
+}
 const INITIAL_BAOCAO_ITEMS               = [];
 
 const STORAGE_KEY = 'wan_baocao_data';
@@ -235,7 +270,7 @@ class BaocaoStore {
           // Lọc bỏ các hàng nội dung mẫu cũ nếu còn lưu trong cache trình duyệt
           const sampleIds = new Set(['bc-1', 'bc-2', 'bc-3', 'bc-4', 'bc-5']);
           const filtered = parsed.filter((item            ) => !sampleIds.has(item.id));
-          return this.sortDesc(filtered);
+          return this.sortAsc(filtered);
         }
       }
     } catch {
@@ -246,7 +281,8 @@ class BaocaoStore {
 
          static saveItems(items              )       {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+      const sorted = this.sortAsc(items);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(sorted));
     } catch {
       // Ignore quota error
     }
@@ -261,7 +297,7 @@ class BaocaoStore {
       status: item.status.trim() || 'Đang thực hiện',
     };
     items.push(newItem);
-    const sorted = this.sortDesc(items);
+    const sorted = this.sortAsc(items);
     this.saveItems(sorted);
     return newItem;
   }
@@ -274,7 +310,7 @@ class BaocaoStore {
       ...items[idx],
       ...updated,
     };
-    const sorted = this.sortDesc(items);
+    const sorted = this.sortAsc(items);
     this.saveItems(sorted);
     return true;
   }
@@ -290,13 +326,17 @@ class BaocaoStore {
     return false;
   }
 
-  // Sắp xếp thời gian mới nhất lên trên, trễ hơn xếp dưới
-         static sortDesc(items              )               {
+  // Sắp xếp thời gian sớm hơn xếp trên, trễ hơn xếp dưới (tăng dần theo thời gian)
+         static sortAsc(items              )               {
     return [...items].sort((a, b) => {
-      const tA = a.time || '';
-      const tB = b.time || '';
-      return tB.localeCompare(tA);
+      const diff = parseTimeValue(a.time) - parseTimeValue(b.time);
+      if (diff !== 0) return diff;
+      return (a.time || '').localeCompare(b.time || '');
     });
+  }
+
+         static sortDesc(items              )               {
+    return this.sortAsc(items);
   }
 }
 
