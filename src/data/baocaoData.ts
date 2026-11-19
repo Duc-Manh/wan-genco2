@@ -41,7 +41,38 @@ export function parseTimeValue(timeStr: string): number {
   return -1;
 }
 
-export const INITIAL_BAOCAO_ITEMS: BaocaoItem[] = [];
+export const INITIAL_BAOCAO_ITEMS: BaocaoItem[] = [
+  {
+    id: 'bc-20260611-01',
+    time: '11/6/2026',
+    content: 'Liên danh T-N-SV-NEX-EMS-VNT trình cam kết bảo mật thông tin',
+    status: 'Hoàn thành',
+  },
+  {
+    id: 'bc-20260609-02',
+    time: '9/6/2026',
+    content: 'Ban QLDA EVNGENCO2 ban hành văn bản số 858/GE2PMB-KTAT ngày 9/6/2026 gửi Tổng công ty và các Đơn vị Hạch toán phụ thuộc đề nghị phối hợp khảo sát. Liên danh bắt đầu khảo sát các địa điểm gồm: Các đơn vị thuộc EVNGENCO2, các Đơn vị điều độ, các Đơn vị Truyền tải, các Đơn vị Điện lực',
+    status: 'Hoàn thành',
+  },
+  {
+    id: 'bc-20260604-03',
+    time: '4/6/2026 - 8/6/2026',
+    content: 'Liên danh T-N-SV-NEX-EMS-VNT trình Kế hoạch khảo sát dự án theo văn bản số 237/CV-ENSO và 245/CV-ENSO',
+    status: 'Hoàn thành',
+  },
+  {
+    id: 'bc-20260511-04',
+    time: '11/5/2026',
+    content: 'Ký hợp đồng số 19/2026/TTK-PMB-T-N-SV-NEX-EMS-VNT, gói thầu số 02-ĐTTT: Thiết kế chi tiết; Cung cấp và thực hiện công tác triển khai xây lắp, lắp đặt hệ thống hạ tầng kỹ thuật, cài đặt phần mềm, hiệu chỉnh vật tư, thiết bị và bảo hiểm công trình với Liên danh các công ty: Công ty Cổ phần Giải pháp Công nghệ Năng lượng ENSO; Công ty Cổ phần Công nghệ NEXTERA; Công ty Cổ phần Phát triển Công nghệ Viễn thông Tin học SUN Việt (SV TECHNOLOGIES JSC; Công ty Cổ phần Công nghệ và Giải pháp EMS; Công ty Cổ phần VNT Hà Nội',
+    status: 'Hoàn thành',
+  },
+  {
+    id: 'bc-20260414-05',
+    time: '14/4/2026',
+    content: 'Ban QLDA EVNGENCO2 ký hợp đồng số 20/2026/HĐ-GE2PMB-GARMA, gói thầu số 01-ĐTTT: Tư vấn giám sát công tác triển khai và thẩm tra thiết kế chi tiết với Công ty Cổ phần Dịch vụ Công nghệ Garma Hà Nội',
+    status: 'Hoàn thành',
+  },
+];
 
 const STORAGE_KEY = 'wan_baocao_data';
 
@@ -51,17 +82,19 @@ export class BaocaoStore {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored !== null) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
+        if (Array.isArray(parsed) && parsed.length > 0) {
           // Lọc bỏ các hàng nội dung mẫu cũ nếu còn lưu trong cache trình duyệt
           const sampleIds = new Set(['bc-1', 'bc-2', 'bc-3', 'bc-4', 'bc-5']);
           const filtered = parsed.filter((item: BaocaoItem) => !sampleIds.has(item.id));
-          return this.sortDesc(filtered);
+          if (filtered.length > 0) {
+            return this.sortDesc(filtered);
+          }
         }
       }
     } catch {
       // Fallback
     }
-    return [];
+    return this.sortDesc(INITIAL_BAOCAO_ITEMS);
   }
 
   public static saveItems(items: BaocaoItem[]): void {

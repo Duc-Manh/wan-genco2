@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { verifyServerToken } from './auth.js';
 
 function parseTimeValue(timeStr) {
@@ -45,8 +47,29 @@ function sortItemsDescending(items) {
   });
 }
 
-let inMemoryItems = [];
+let inMemoryItems = null;
 const auditTrail = [];
+
+function getInitialBaocaoData() {
+  if (inMemoryItems && inMemoryItems.length > 0) {
+    return inMemoryItems;
+  }
+  try {
+    const candidatePaths = [
+      path.join(process.cwd(), 'data', 'baocao.json'),
+      path.join(process.cwd(), 'dist', 'data', 'baocao.json'),
+      '/tmp/baocao_data.json',
+    ];
+    for (const p of candidatePaths) {
+      if (fs.existsSync(p)) {
+        inMemoryItems = sortItemsDescending(JSON.parse(fs.readFileSync(p, 'utf-8')));
+        return inMemoryItems;
+      }
+    }
+  } catch {}
+  inMemoryItems = [];
+  return inMemoryItems;
+}
 
 export default function handler(req, res) {
   const origin = req.headers.origin || '';
@@ -62,7 +85,8 @@ export default function handler(req, res) {
 
   // GET: Xem báo cáo - luôn sắp xếp thời gian mới nhất (trễ nhất) lên trên cùng
   if (req.method === 'GET') {
-    return res.status(200).json(sortItemsDescending(inMemoryItems));
+    const items = getInitialBaocaoData();
+    return res.status(200).json(sortItemsDescending(items));
   }
 
   // MỌI THAO TÁC THAY ĐỔI (POST, DELETE) BẮT BUỘC PHẢI CÓ TOKEN XÁC THỰC PHÍA SERVER
@@ -86,6 +110,9 @@ export default function handler(req, res) {
     }
 
     inMemoryItems = sortItemsDescending(items);
+    try {
+      fs.writeFileSync('/tmp/baocao_data.json', JSON.stringify(inMemoryItems, null, 2), 'utf-8');
+    } catch {}
 
     // Ghi nhật ký kiểm toán (Audit Trail)
     auditTrail.push({
@@ -100,8 +127,12 @@ export default function handler(req, res) {
 
   if (req.method === 'DELETE') {
     const { id } = req.body || {};
+    let items = getInitialBaocaoData();
     if (id) {
-      inMemoryItems = inMemoryItems.filter((it) => it.id !== id);
+      inMemoryItems = items.filter((it) => it.id !== id);
+      try {
+        fs.writeFileSync('/tmp/baocao_data.json', JSON.stringify(inMemoryItems, null, 2), 'utf-8');
+      } catch {}
       auditTrail.push({
         action: 'DELETE_ROW',
         ip: clientIp,
