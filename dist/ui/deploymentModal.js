@@ -95,7 +95,7 @@ export class DeploymentModal {
             <input id="input-new-time" type="text" class="wan-dp-input" value="${defaultTime}" placeholder="dd/mm/yyyy" />
           </td>
           <td class="wan-dp-col-content">
-            <input id="input-new-content" type="text" class="wan-dp-input" placeholder="Nhập nội dung triển khai thực tế..." autofocus />
+            <textarea id="input-new-content" class="wan-dp-textarea" placeholder="Nhập nội dung triển khai thực tế..." rows="1" autofocus></textarea>
           </td>
           <td class="wan-dp-col-status">
             <select id="select-new-status" class="wan-dp-select">
@@ -131,7 +131,7 @@ export class DeploymentModal {
                 <input id="edit-time-${item.id}" type="text" class="wan-dp-input" value="${escapeHtml(item.time)}" placeholder="dd/mm/yyyy" />
               </td>
               <td class="wan-dp-col-content">
-                <input id="edit-content-${item.id}" type="text" class="wan-dp-input" value="${escapeHtml(item.content)}" />
+                <textarea id="edit-content-${item.id}" class="wan-dp-textarea" placeholder="Nhập nội dung triển khai thực tế..." rows="1">${escapeHtml(item.content)}</textarea>
               </td>
               <td class="wan-dp-col-status">
                 <select id="edit-status-${item.id}" class="wan-dp-select">
@@ -272,6 +272,16 @@ export class DeploymentModal {
     };
     window.addEventListener('keydown', onKeyDown);
 
+    // Tự động điều chỉnh chiều cao (auto-resize height) cho các thẻ textarea khi nội dung dài
+    this.modalOverlay.querySelectorAll                     ('.wan-dp-textarea').forEach((ta) => {
+      const resize = () => {
+        ta.style.height = 'auto';
+        ta.style.height = `${Math.max(34, ta.scrollHeight)}px`;
+      };
+      ta.addEventListener('input', resize);
+      requestAnimationFrame(resize);
+    });
+
     // Button "+ Thêm"
     this.modalOverlay.querySelector('#btn-add-deploy-row')?.addEventListener('click', () => {
       if (!AuthManager.isAuthenticated()) return;
@@ -279,14 +289,15 @@ export class DeploymentModal {
       this.editingId = null;
       this.render();
       setTimeout(() => {
-        (this.modalOverlay?.querySelector('#input-new-content')                           )?.focus();
+        const ta = this.modalOverlay?.querySelector('#input-new-content')                              ;
+        ta?.focus();
       }, 50);
     });
 
     // Button Save New Row
     this.modalOverlay.querySelector('#btn-save-new-row')?.addEventListener('click', async () => {
       const timeInput = this.modalOverlay?.querySelector('#input-new-time')                           ;
-      const contentInput = this.modalOverlay?.querySelector('#input-new-content')                           ;
+      const contentInput = this.modalOverlay?.querySelector('#input-new-content')                                                 ;
       const statusSelect = this.modalOverlay?.querySelector('#select-new-status')                            ;
 
       if (!contentInput || !contentInput.value.trim()) {
@@ -335,7 +346,7 @@ export class DeploymentModal {
         if (!id) return;
 
         const timeInput = this.modalOverlay?.querySelector(`#edit-time-${id}`)                           ;
-        const contentInput = this.modalOverlay?.querySelector(`#edit-content-${id}`)                           ;
+        const contentInput = this.modalOverlay?.querySelector(`#edit-content-${id}`)                                                 ;
         const statusSelect = this.modalOverlay?.querySelector(`#edit-status-${id}`)                            ;
 
         if (!contentInput || !contentInput.value.trim()) {
