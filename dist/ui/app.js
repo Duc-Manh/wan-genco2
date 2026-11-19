@@ -15,6 +15,7 @@ import {
 import { buildDiagramSvg } from '../renderer/svgDiagram.js';
 import { GanttModal } from './ganttModal.js';
 import { DeploymentModal } from './deploymentModal.js';
+import { BangThongModal } from './bangthongModal.js';
 import { AuthWidget, AuthManager } from './authWidget.js';
 
                              
@@ -150,6 +151,7 @@ export class WanApp {
           selectedId                = null;
           ganttModal             ;
           deploymentModal                  ;
+          bangThongModal                 ;
           authWidget             ;
 
   constructor(container             ) {
@@ -303,6 +305,7 @@ export class WanApp {
     this.renderShell();
     this.ganttModal = new GanttModal(this.container);
     this.deploymentModal = new DeploymentModal(this.container);
+    this.bangThongModal = new BangThongModal(this.container);
     this.authWidget = new AuthWidget(this.container);
     this.authWidget.mount();
     this.initDiagramSvg();
@@ -392,6 +395,13 @@ export class WanApp {
             </button>
           `
     ).join('')}
+          <div class="wan-region-divider"></div>
+          <button class="wan-region-pill wan-region-btn-bangthong" id="btn-open-bangthong" title="Xem bảng thông tin Băng thông dự án (bangthong.xlsx)">
+            <svg class="wan-pill-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px; vertical-align:-1px;">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+            </svg>
+            Băng thông dự án
+          </button>
         </nav>
 
         <!-- Sub Navigation Bar -->
@@ -550,12 +560,19 @@ export class WanApp {
     });
 
     // Region bar pills
-    const regionBtns = this.container.querySelectorAll('.wan-region-pill');
+    const regionBtns = this.container.querySelectorAll('.wan-region-bar .wan-region-pill[data-region]');
     regionBtns.forEach((btn) => {
       btn.addEventListener('click', () => {
         const regId = (btn               ).dataset.region            ;
-        this.selectRegion(regId, true);
+        if (regId) {
+          this.selectRegion(regId, true);
+        }
       });
+    });
+
+    // Nút Băng thông dự án
+    this.container.querySelector('#btn-open-bangthong')?.addEventListener('click', () => {
+      this.bangThongModal.open();
     });
 
     // Subnav items (Bảng tiến độ, Triển khai thực tế, Góp ý thảo luận)

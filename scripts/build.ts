@@ -34,6 +34,7 @@ function buildStandaloneBundle(): void {
     'src/types/wan.ts',
     'src/data/stencils.ts',
     'src/data/ganttData.ts',
+    'src/data/bangthongData.ts',
     'src/data/baocaoData.ts',
     'src/data/wanVertices1.ts',
     'src/data/wanVertices2.ts',
@@ -41,6 +42,7 @@ function buildStandaloneBundle(): void {
     'src/data/wanElements.ts',
     'src/renderer/svgDiagram.ts',
     'src/ui/ganttModal.ts',
+    'src/ui/bangthongModal.ts',
     'src/ui/authWidget.ts',
     'src/ui/deploymentModal.ts',
     'src/ui/app.ts',
@@ -77,6 +79,9 @@ if (fs.existsSync(path.join(ROOT_DIR, 'baocao.xlsx'))) {
 }
 if (fs.existsSync(path.join(ROOT_DIR, 'infor.xlsx'))) {
   fs.copyFileSync(path.join(ROOT_DIR, 'infor.xlsx'), path.join(DIST_DIR, 'infor.xlsx'));
+}
+if (fs.existsSync(path.join(ROOT_DIR, 'bangthong.xlsx'))) {
+  fs.copyFileSync(path.join(ROOT_DIR, 'bangthong.xlsx'), path.join(DIST_DIR, 'bangthong.xlsx'));
 }
 if (fs.existsSync(path.join(ROOT_DIR, 'favicon.ico'))) {
   fs.copyFileSync(path.join(ROOT_DIR, 'favicon.ico'), path.join(DIST_DIR, 'favicon.ico'));
