@@ -1,6 +1,16 @@
 import type { BangThongRow } from '../data/bangthongData.ts';
 import { BANG_THONG_DATA } from '../data/bangthongData.ts';
 
+function escapeHtml(str: any): string {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export class BangThongModal {
   private container: HTMLElement;
   private modalOverlay: HTMLElement | null = null;
@@ -117,7 +127,7 @@ export class BangThongModal {
       tableRowsHtml = `
         <tr>
           <td colspan="6" class="wan-bt-empty">
-            Không tìm thấy tuyến quang nào khớp với từ khóa "<strong>${this.searchQuery}</strong>".
+            Không tìm thấy tuyến quang nào khớp với từ khóa "<strong>${escapeHtml(this.searchQuery)}</strong>".
           </td>
         </tr>
       `;
@@ -181,7 +191,7 @@ export class BangThongModal {
               id="wan-bt-search-input"
               class="wan-bt-search-input"
               placeholder="Tìm kiếm theo trạm, lộ trình, điểm kết nối, ghi chú..."
-              value="${this.searchQuery}"
+              value="${escapeHtml(this.searchQuery)}"
             />
             ${this.searchQuery ? '<button id="btn-bt-clear-search" class="wan-bt-clear-search">&times;</button>' : ''}
           </div>

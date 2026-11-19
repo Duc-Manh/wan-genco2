@@ -1,22 +1,15 @@
 export const AUTH_STORAGE_KEY = 'wan_admin_session_v3';
-// Băm SHA-256 an toàn của mã quản trị - Mật mã gốc không bao giờ xuất hiện ở dạng plaintext
-export const ADMIN_AUTH_HASH = '45b8778b307f91d4e32dd17b51b02f4b95ff5b7c10e66485b6275cdf294d3105';
 
                               
                 
                     
  
 
-export async function hashSha256(message        )                  {
-  const msgBuffer = new TextEncoder().encode(message.trim());
-  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
 export class AuthManager {
           static failedAttempts = 0;
           static lockedUntil = 0;
+          static          MAX_ATTEMPTS = 3;
+          static          LOCKOUT_TIME_MS = 5 * 60 * 1000; // 5 phút
 
          static isAuthenticated()          {
     try {
@@ -48,19 +41,30 @@ export class AuthManager {
     return null;
   }
 
+         static getRemainingLockoutSeconds()         {
+    if (Date.now() < this.lockedUntil) {
+      return Math.ceil((this.lockedUntil - Date.now()) / 1000);
+    }
+    return 0;
+  }
+
          static async login(code        )                                                {
     const trimmed = code.trim();
     if (!trimmed) {
-      return { success: false, error: 'Vui lòng nhập mã đăng nhập!' };
+      return { success: false, error: 'Vui lòng nhập mã xác thực!' };
     }
 
-    // Kiểm tra giới hạn khóa tạm thời do nhập sai nhiều lần
-    if (Date.now() < this.lockedUntil) {
-      const waitSec = Math.ceil((this.lockedUntil - Date.now()) / 1000);
-      return { success: false, error: `Tài khoản tạm khóa do nhập sai quá 5 lần. Vui lòng đợi ${waitSec} giây.` };
+    // Kiểm tra giới hạn khóa do nhập sai quá 3 lần (khóa 5 phút)
+    const waitSec = this.getRemainingLockoutSeconds();
+    if (waitSec > 0) {
+      const waitMin = Math.ceil(waitSec / 60);
+      return {
+        success: false,
+        error: `Tài khoản tạm khóa do nhập sai quá 3 lần liên tiếp. Vui lòng thử lại sau ${waitSec} giây (~${waitMin} phút).`,
+      };
     }
 
-    // 1. Xác thực qua Server API /api/auth
+    // Xác thực an toàn duy nhất qua Server API /api/auth
     try {
       const res = await fetch('/api/auth', {
         method: 'POST',
@@ -76,46 +80,44 @@ export class AuthManager {
           expiresAt: data.expiresAt || Date.now() + 8 * 3600 * 1000,
         });
         this.failedAttempts = 0;
+        this.lockedUntil = 0;
         window.dispatchEvent(new CustomEvent('wan:auth-changed', { detail: { isAuthenticated: true } }));
         return { success: true };
       }
 
       if (res.status === 429) {
-        this.lockedUntil = Date.now() + 60 * 1000;
-        return { success: false, error: data.error || 'Quá nhiều lần thử sai. Vui lòng thử lại sau 60 giây.' };
+        const sec = data.waitSeconds || 300;
+        this.lockedUntil = Date.now() + sec * 1000;
+        return {
+          success: false,
+          error: data.error || `Bạn đã nhập sai 3 lần liên tiếp. Hệ thống khóa đăng nhập trong 5 phút.`,
+        };
       }
 
       if (res.status === 401) {
         this.recordFailedAttempt();
-        return { success: false, error: data.error || 'Mã đăng nhập không chính xác!' };
+        return {
+          success: false,
+          error: data.error || 'Mã xác thực không chính xác!',
+        };
       }
-    } catch {
-      // 2. Chế độ dự phòng offline (so sánh SHA-256 an toàn bằng Web Crypto API)
-      try {
-        const hash = await hashSha256(trimmed);
-        if (hash === ADMIN_AUTH_HASH) {
-          const offlineToken = `off-${hash.slice(0, 16)}-${Date.now()}`;
-          this.saveSession({
-            token: offlineToken,
-            expiresAt: Date.now() + 8 * 3600 * 1000,
-          });
-          this.failedAttempts = 0;
-          window.dispatchEvent(new CustomEvent('wan:auth-changed', { detail: { isAuthenticated: true } }));
-          return { success: true };
-        }
-      } catch {
-        // Crypto API error
-      }
-    }
 
-    this.recordFailedAttempt();
-    return { success: false, error: 'Mã đăng nhập không chính xác!' };
+      return {
+        success: false,
+        error: data.error || 'Lỗi kiểm tra mã xác thực từ máy chủ!',
+      };
+    } catch {
+      return {
+        success: false,
+        error: 'Không thể kết nối đến máy chủ xác thực. Vui lòng kiểm tra lại kết nối mạng!',
+      };
+    }
   }
 
           static recordFailedAttempt()       {
     this.failedAttempts++;
-    if (this.failedAttempts >= 5) {
-      this.lockedUntil = Date.now() + 60 * 1000;
+    if (this.failedAttempts >= this.MAX_ATTEMPTS) {
+      this.lockedUntil = Date.now() + this.LOCKOUT_TIME_MS; // Khóa 5 phút
     }
   }
 
@@ -131,19 +133,16 @@ export class AuthManager {
     try {
       sessionStorage.removeItem(AUTH_STORAGE_KEY);
       localStorage.removeItem(AUTH_STORAGE_KEY);
-      sessionStorage.removeItem('wan_login_session');
-      localStorage.removeItem('wan_login_session');
-      localStorage.removeItem('wan_admin_auth_code'); // Dọn dẹp key cũ
+      localStorage.removeItem('wan_admin_auth_code');
     } catch {}
     window.dispatchEvent(new CustomEvent('wan:auth-changed', { detail: { isAuthenticated: false } }));
-    window.dispatchEvent(new CustomEvent('wan:logout'));
   }
 }
 
 export class AuthWidget {
           container             ;
           wrapperEl                     = null;
-          isOpen          = false;
+          isOpen = false;
 
   constructor(container             ) {
     this.container = container;
@@ -168,6 +167,8 @@ export class AuthWidget {
     if (!this.wrapperEl) return;
 
     const isAuthed = AuthManager.isAuthenticated();
+    const lockSec = AuthManager.getRemainingLockoutSeconds();
+    const isLocked = lockSec > 0;
 
     this.wrapperEl.innerHTML = `
       <!-- Floating Tab Button on Right Middle -->
@@ -212,24 +213,29 @@ export class AuthWidget {
           `
               : `
             <div class="wan-auth-form">
-              <label for="auth-input-code" class="wan-auth-label">Mã đăng nhập:</label>
+              <label for="auth-input-code" class="wan-auth-label">Mã xác thực:</label>
               <div class="wan-auth-input-wrap">
                 <input
                   id="auth-input-code"
                   type="password"
                   class="wan-auth-input"
-                  placeholder="Nhập mã đăng nhập..."
+                  placeholder="Nhập mã xác thực..."
                   autocomplete="off"
+                  ${isLocked ? 'disabled' : ''}
                 />
-                <button type="button" id="btn-toggle-show-pwd" class="wan-auth-eye-btn" title="Hiện/Ẩn mã">
+                <button type="button" id="btn-toggle-show-pwd" class="wan-auth-eye-btn" title="Hiện/Ẩn mã" ${isLocked ? 'disabled' : ''}>
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                     <circle cx="12" cy="12" r="3"/>
                   </svg>
                 </button>
               </div>
-              <div id="auth-error-msg" class="wan-auth-error-msg hidden">Mã đăng nhập không chính xác!</div>
-              <button id="btn-auth-submit" class="wan-btn-auth-action primary">Xác nhận</button>
+              <div id="auth-error-msg" class="wan-auth-error-msg ${isLocked ? '' : 'hidden'}">
+                ${isLocked ? `Tài khoản tạm khóa do nhập sai quá 3 lần liên tiếp. Vui lòng chờ ${lockSec}s.` : ''}
+              </div>
+              <button id="btn-auth-submit" class="wan-btn-auth-action primary" ${isLocked ? 'disabled style="opacity:0.6; cursor:not-allowed;"' : ''}>
+                ${isLocked ? 'Đang tạm khóa (5 phút)' : 'Xác nhận'}
+              </button>
             </div>
           `
           }
@@ -250,13 +256,14 @@ export class AuthWidget {
         this.render();
         if (this.isOpen) {
           setTimeout(() => {
-            (this.wrapperEl?.querySelector('#auth-input-code')                           )?.focus();
-          }, 100);
+            const input = this.wrapperEl?.querySelector('#auth-input-code')                           ;
+            if (input && !input.disabled) input.focus();
+          }, 80);
         }
         return;
       }
 
-      // Close popover
+      // Close popover button
       if (target.closest('#btn-close-auth-popover')) {
         this.isOpen = false;
         this.render();
@@ -266,6 +273,7 @@ export class AuthWidget {
       // Logout button
       if (target.closest('#btn-auth-logout')) {
         AuthManager.logout();
+        this.isOpen = false;
         this.render();
         return;
       }
@@ -279,17 +287,18 @@ export class AuthWidget {
         return;
       }
 
-      // Submit login
+      // Submit button
       if (target.closest('#btn-auth-submit')) {
         this.handleLoginSubmit();
+        return;
       }
     });
 
-    // Enter key to submit
-    this.wrapperEl.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
+    // Enter key & Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && this.isOpen) {
         const input = this.wrapperEl?.querySelector('#auth-input-code')                           ;
-        if (document.activeElement === input) {
+        if (input && document.activeElement === input) {
           e.preventDefault();
           this.handleLoginSubmit();
         }
@@ -305,7 +314,7 @@ export class AuthWidget {
     const input = this.wrapperEl?.querySelector('#auth-input-code')                           ;
     const errorMsg = this.wrapperEl?.querySelector('#auth-error-msg')                      ;
     const submitBtn = this.wrapperEl?.querySelector('#btn-auth-submit')                            ;
-    if (!input) return;
+    if (!input || input.disabled) return;
 
     const val = input.value.trim();
     if (submitBtn) {
@@ -320,18 +329,21 @@ export class AuthWidget {
         this.render();
       } else {
         if (errorMsg) {
-          errorMsg.textContent = result.error || 'Mã đăng nhập không chính xác!';
+          errorMsg.textContent = result.error || 'Mã xác thực không chính xác!';
           errorMsg.classList.remove('hidden');
           input.classList.add('error');
           input.focus();
         }
+        // Nếu bị khóa, re-render để cập nhật trạng thái disabled
+        if (AuthManager.getRemainingLockoutSeconds() > 0) {
+          this.render();
+        }
       }
     } finally {
-      if (submitBtn) {
+      if (submitBtn && AuthManager.getRemainingLockoutSeconds() === 0) {
         submitBtn.disabled = false;
         submitBtn.textContent = 'Xác nhận';
       }
     }
   }
 }
-

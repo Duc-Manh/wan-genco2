@@ -1,22 +1,45 @@
 import crypto from 'node:crypto';
+import { kvGet, kvSet } from './kv.js';
 
-// In-memory brute-force attempt tracker per IP
+// Cấu hình chống dò mã xác thực (Brute-force protection)
+const MAX_ATTEMPTS = 3; // Sai quá 3 lần
+const LOCKOUT_TIME_MS = 5 * 60 * 1000; // Khóa 5 phút (300.000 ms)
 const attemptTracker = new Map();
-const MAX_ATTEMPTS = 5;
-const LOCKOUT_TIME_MS = 60 * 1000; // Khóa 60 giây sau 5 lần sai liên tiếp
 
-// Server-side SHA-256 hash của mã quản trị (mật mã gốc không bao giờ xuất hiện ở plaintext)
+// Hash mã quản trị (lấy từ biến môi trường Vercel hoặc fallback)
 const ADMIN_HASH = process.env.WAN_ADMIN_HASH || '45b8778b307f91d4e32dd17b51b02f4b95ff5b7c10e66485b6275cdf294d3105';
 const SERVER_SECRET = process.env.WAN_SERVER_SECRET || 'evngenco2-wan-sec-2026-auth-sig';
 
+export function checkAndSetCors(req, res) {
+  const origin = req.headers.origin || '';
+  const allowedOrigins = [
+    'https://wan-genco2.vercel.app',
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://localhost:8080',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:8080',
+  ];
+
+  const isAllowed =
+    allowedOrigins.includes(origin) ||
+    /^https:\/\/wan-genco2(-[a-z0-9-]+)?-duc-manhs-projects-d3de04df\.vercel\.app$/.test(origin) ||
+    /^https:\/\/wan-genco2(-[a-z0-9-]+)?\.vercel\.app$/.test(origin);
+
+  if (isAllowed) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  return isAllowed;
+}
+
+// Xác thực Token an toàn phía Server (HMAC-SHA256 signature + expiration)
+// KHÔNG CHẤP NHẬN token tự chế hoặc tiền tố 'off-'
 export function verifyServerToken(token) {
   if (!token || typeof token !== 'string') return false;
   try {
-    // Hỗ trợ offline token định dạng 'off-...'
-    if (token.startsWith('off-')) {
-      return true;
-    }
-
     const parts = token.split('.');
     if (parts.length !== 3) return false;
     const [payloadB64, expiresAtStr, sig] = parts;
@@ -28,19 +51,40 @@ export function verifyServerToken(token) {
       .update(`${payloadB64}.${expiresAtStr}`)
       .digest('hex');
 
+    if (sig.length !== expectedSig.length) return false;
     return crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expectedSig));
   } catch {
     return false;
   }
 }
 
-export default function handler(req, res) {
-  const origin = req.headers.origin || '';
-  if (origin.endsWith('.vercel.app') || origin.includes('localhost') || origin.includes('127.0.0.1')) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  }
-  res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+async function getIpTracker(clientIp) {
+  const cacheKey = `wan_auth_lock_${clientIp.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+  try {
+    const data = await kvGet(cacheKey);
+    if (data && typeof data === 'object') return data;
+  } catch {}
+  return attemptTracker.get(clientIp) || { count: 0, lockedUntil: 0 };
+}
+
+async function saveIpTracker(clientIp, tracker) {
+  const cacheKey = `wan_auth_lock_${clientIp.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+  attemptTracker.set(clientIp, tracker);
+  try {
+    await kvSet(cacheKey, tracker);
+  } catch {}
+}
+
+async function resetIpTracker(clientIp) {
+  const cacheKey = `wan_auth_lock_${clientIp.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+  attemptTracker.delete(clientIp);
+  try {
+    await kvSet(cacheKey, { count: 0, lockedUntil: 0 });
+  } catch {}
+}
+
+export default async function handler(req, res) {
+  checkAndSetCors(req, res);
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -49,29 +93,31 @@ export default function handler(req, res) {
   const clientIp = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown').split(',')[0].trim();
 
   if (req.method === 'POST') {
-    // 1. Kiểm tra giới hạn khóa do Brute-force
-    const tracker = attemptTracker.get(clientIp) || { count: 0, lockedUntil: 0 };
-    if (Date.now() < tracker.lockedUntil) {
+    // 1. Kiểm tra trạng thái khóa (Đồng bộ qua Upstash Redis + in-memory)
+    const tracker = await getIpTracker(clientIp);
+    if (tracker && tracker.lockedUntil && Date.now() < tracker.lockedUntil) {
       const waitSec = Math.ceil((tracker.lockedUntil - Date.now()) / 1000);
+      const waitMin = Math.ceil(waitSec / 60);
       return res.status(429).json({
-        error: `Quá nhiều lần thử sai. Vui lòng đợi ${waitSec} giây trước khi thử lại.`,
+        error: `Tài khoản bị tạm khóa do nhập sai quá 3 lần liên tiếp. Vui lòng đợi ${waitSec} giây (~${waitMin} phút) trước khi thử lại.`,
         locked: true,
+        waitSeconds: waitSec,
       });
     }
 
     const { code } = req.body || {};
     if (!code || typeof code !== 'string') {
-      return res.status(400).json({ error: 'Mã đăng nhập không được để trống.' });
+      return res.status(400).json({ error: 'Mã xác thực không được để trống.' });
     }
 
-    // 2. Băm mã nhập vào bằng SHA-256 và so sánh an toàn
+    // 2. Băm mã nhập vào bằng SHA-256 và so sánh bảo vệ Timing Attack
     const inputHash = crypto.createHash('sha256').update(code.trim()).digest('hex');
 
-    if (crypto.timingSafeEqual(Buffer.from(inputHash), Buffer.from(ADMIN_HASH))) {
-      // Đăng nhập đúng: reset bộ đếm thất bại
-      attemptTracker.delete(clientIp);
+    if (inputHash.length === ADMIN_HASH.length && crypto.timingSafeEqual(Buffer.from(inputHash), Buffer.from(ADMIN_HASH))) {
+      // Đăng nhập đúng: reset toàn bộ bộ đếm sai
+      await resetIpTracker(clientIp);
 
-      const expiresAt = Date.now() + 8 * 60 * 60 * 1000; // Phiên đăng nhập có hiệu lực 8 giờ
+      const expiresAt = Date.now() + 8 * 60 * 60 * 1000; // Phiên 8 giờ
       const payloadB64 = Buffer.from(JSON.stringify({ role: 'admin', ip: clientIp, loginTime: Date.now() })).toString('base64url');
       const sig = crypto
         .createHmac('sha256', SERVER_SECRET)
@@ -86,16 +132,25 @@ export default function handler(req, res) {
         message: 'Xác thực thành công quyền Quản trị viên',
       });
     } else {
-      // Đăng nhập sai: tăng bộ đếm và khóa nếu quá 5 lần
+      // Đăng nhập sai: tăng bộ đếm và khóa 5 phút nếu sai quá 3 lần
       tracker.count = (tracker.count || 0) + 1;
       if (tracker.count >= MAX_ATTEMPTS) {
         tracker.lockedUntil = Date.now() + LOCKOUT_TIME_MS;
       }
-      attemptTracker.set(clientIp, tracker);
+      await saveIpTracker(clientIp, tracker);
 
       const remaining = Math.max(0, MAX_ATTEMPTS - tracker.count);
+      if (remaining === 0) {
+        return res.status(429).json({
+          error: 'Bạn đã nhập mã xác thực sai 3 lần liên tiếp. Hệ thống tạm khóa đăng nhập trong 5 phút để bảo vệ tài khoản.',
+          locked: true,
+          remainingAttempts: 0,
+          waitSeconds: 300,
+        });
+      }
+
       return res.status(401).json({
-        error: remaining > 0 ? `Mã đăng nhập không chính xác! (Còn ${remaining} lần thử)` : 'Tài khoản bị tạm khóa 60 giây do nhập sai nhiều lần.',
+        error: `Mã xác thực không chính xác! (Còn ${remaining} lần thử trước khi bị khóa 5 phút)`,
         remainingAttempts: remaining,
       });
     }
@@ -103,11 +158,10 @@ export default function handler(req, res) {
 
   if (req.method === 'GET') {
     const authHeader = req.headers.authorization || '';
-    const token = authHeader.replace(/^Bearer\s+/i, '');
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
     const valid = verifyServerToken(token);
     return res.status(200).json({ valid });
   }
 
   return res.status(405).json({ error: 'Method not allowed' });
 }
-

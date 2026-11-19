@@ -18,6 +18,16 @@ import { DeploymentModal } from './deploymentModal.js';
 import { BangThongModal } from './bangthongModal.js';
 import { AuthWidget, AuthManager } from './authWidget.js';
 
+function escapeHtml(str     )         {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
                              
                      
                                             
@@ -934,7 +944,7 @@ export class WanApp {
 
     const topMatches = matches.slice(0, 14);
     if (topMatches.length === 0) {
-      dropdown.innerHTML = `<div class="wan-search-empty">Không tìm thấy trạm hoặc thiết bị khớp với "${query}"</div>`;
+      dropdown.innerHTML = `<div class="wan-search-empty">Không tìm thấy trạm hoặc thiết bị khớp với "${escapeHtml(query)}"</div>`;
       dropdown.classList.remove('hidden');
       return;
     }
@@ -942,11 +952,11 @@ export class WanApp {
     dropdown.innerHTML = topMatches
       .map(
         (m) => `
-      <div class="wan-search-item" data-id="${m.id}">
-        <span class="wan-search-badge" style="background:${m.color}18;color:${m.color};border:1px solid ${m.color}44">${m.badge}</span>
+      <div class="wan-search-item" data-id="${escapeHtml(m.id)}">
+        <span class="wan-search-badge" style="background:${escapeHtml(m.color)}18;color:${escapeHtml(m.color)};border:1px solid ${escapeHtml(m.color)}44">${escapeHtml(m.badge)}</span>
         <div class="wan-search-item-main">
-          <div class="wan-search-item-title">${m.title}</div>
-          <div class="wan-search-item-sub">${m.subtitle}</div>
+          <div class="wan-search-item-title">${escapeHtml(m.title)}</div>
+          <div class="wan-search-item-sub">${escapeHtml(m.subtitle)}</div>
         </div>
       </div>
     `
