@@ -128,7 +128,7 @@ export class BangThongModal {
         <!-- Header -->
         <div class="wan-gantt-header" style="background: #1e3a8a;">
           <div class="wan-gantt-brand">
-            <div class="wan-gantt-badge" style="background: #0284c7;">BĂNG THÔNG DỰ ÁN</div>
+            <div class="wan-gantt-badge" style="background: transparent; border: 1px solid rgba(255, 255, 255, 0.4);">BĂNG THÔNG DỰ ÁN</div>
             <div>
               <h2 id="bt-modal-title">THÔNG TIN BĂNG THÔNG CÁC TUYẾN QUANG DỰ ÁN WAN EVNGENCO2</h2>
               <div class="wan-gantt-subtitle">Dữ liệu nguồn từ file <strong>bangthong.xlsx</strong> &bull; Tổng cộng ${totalLines} lộ kết nối (18 cụm tuyến)</div>
