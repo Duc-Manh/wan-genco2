@@ -43,6 +43,7 @@ function buildStandaloneBundle(): void {
     'src/ui/ganttModal.ts',
     'src/ui/authWidget.ts',
     'src/ui/deploymentModal.ts',
+    'src/ui/login.ts',
     'src/ui/app.ts',
     'src/main.ts',
   ];
@@ -53,7 +54,7 @@ function buildStandaloneBundle(): void {
     const tsCode = fs.readFileSync(fullPath, 'utf-8');
     let jsCode = module.stripTypeScriptTypes(tsCode, { mode: 'strip' });
     jsCode = jsCode.replace(/^\s*import\s+[\s\S]*?from\s+['"][^'"]+['"];?\s*$/gm, '');
-    jsCode = jsCode.replace(/^\s*export\s+(const|function|class)\s+/gm, '$1 ');
+    jsCode = jsCode.replace(/^\s*export\s+(async\s+function|default\s+function|default\s+class|const|let|var|function|class)\s+/gm, '$1 ');
     jsCode = jsCode.replace(/^\s*export\s+\{[^}]*\};?\s*$/gm, '');
     chunks.push(`// --- ${relPath} ---\n${jsCode}\n`);
   }

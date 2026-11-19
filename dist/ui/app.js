@@ -233,6 +233,13 @@ export class WanApp {
               <button id="btn-export-svg" class="wan-tool-btn wan-btn-primary" title="Tải xuống file vector SVG">Xuất SVG</button>
               <button id="btn-export-png" class="wan-tool-btn" title="Tải xuống ảnh PNG độ phân giải cao">Xuất PNG</button>
             </div>
+
+            <div class="wan-btn-group">
+              <button id="btn-header-logout" class="wan-tool-btn wan-btn-logout" title="Đăng xuất khỏi hệ thống">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                <span>Đăng xuất</span>
+              </button>
+            </div>
           </div>
         </header>
 
@@ -473,6 +480,11 @@ export class WanApp {
     });
     this.container.querySelector('#btn-export-png')?.addEventListener('click', () => {
       this.exportPng();
+    });
+    this.container.querySelector('#btn-header-logout')?.addEventListener('click', () => {
+      if (confirm('Bạn có chắc chắn muốn đăng xuất khỏi hệ thống?')) {
+        window.dispatchEvent(new CustomEvent('wan:logout'));
+      }
     });
 
     // Global search input

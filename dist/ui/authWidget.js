@@ -1,4 +1,4 @@
-const AUTH_STORAGE_KEY = 'wan_admin_session_v3';
+export const AUTH_STORAGE_KEY = 'wan_admin_session_v3';
 // Băm SHA-256 an toàn của mã quản trị - Mật mã gốc không bao giờ xuất hiện ở dạng plaintext
 export const ADMIN_AUTH_HASH = '45b8778b307f91d4e32dd17b51b02f4b95ff5b7c10e66485b6275cdf294d3105';
 
@@ -131,9 +131,12 @@ export class AuthManager {
     try {
       sessionStorage.removeItem(AUTH_STORAGE_KEY);
       localStorage.removeItem(AUTH_STORAGE_KEY);
+      sessionStorage.removeItem('wan_login_session');
+      localStorage.removeItem('wan_login_session');
       localStorage.removeItem('wan_admin_auth_code'); // Dọn dẹp key cũ
     } catch {}
     window.dispatchEvent(new CustomEvent('wan:auth-changed', { detail: { isAuthenticated: false } }));
+    window.dispatchEvent(new CustomEvent('wan:logout'));
   }
 }
 
