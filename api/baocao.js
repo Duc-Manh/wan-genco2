@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { verifyServerToken } from './auth.js';
+import { kvGet, kvSet } from './kv.js';
 
 function parseTimeValue(timeStr) {
   if (!timeStr) return -1;
@@ -71,7 +72,7 @@ function getInitialBaocaoData() {
   return inMemoryItems;
 }
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   const origin = req.headers.origin || '';
   if (origin.endsWith('.vercel.app') || origin.includes('localhost') || origin.includes('127.0.0.1')) {
     res.setHeader('Access-Control-Allow-Origin', origin);
@@ -83,9 +84,21 @@ export default function handler(req, res) {
     return res.status(200).end();
   }
 
-  // GET: Xem báo cáo - luôn sắp xếp thời gian mới nhất (trễ nhất) lên trên cùng
+  // GET: Xem báo cáo - ưu tiên đọc từ Cloud KV (Redis) đồng bộ tất cả thiết bị
   if (req.method === 'GET') {
+    try {
+      const kvData = await kvGet('wan_baocao_data');
+      if (Array.isArray(kvData) && kvData.length > 0) {
+        inMemoryItems = sortItemsDescending(kvData);
+        return res.status(200).json(inMemoryItems);
+      }
+    } catch {}
+
     const items = getInitialBaocaoData();
+    if (items.length > 0) {
+      // Seed dữ liệu mặc định lên Cloud KV nếu KV chưa có
+      kvSet('wan_baocao_data', items).catch(() => {});
+    }
     return res.status(200).json(sortItemsDescending(items));
   }
 
@@ -110,6 +123,10 @@ export default function handler(req, res) {
     }
 
     inMemoryItems = sortItemsDescending(items);
+
+    // Lưu vĩnh viễn lên Cloud KV (đồng bộ đa thiết bị: máy tính, điện thoại, tablet)
+    await kvSet('wan_baocao_data', inMemoryItems);
+
     try {
       fs.writeFileSync('/tmp/baocao_data.json', JSON.stringify(inMemoryItems, null, 2), 'utf-8');
     } catch {}
@@ -127,9 +144,10 @@ export default function handler(req, res) {
 
   if (req.method === 'DELETE') {
     const { id } = req.body || {};
-    let items = getInitialBaocaoData();
+    let items = (await kvGet('wan_baocao_data')) || getInitialBaocaoData();
     if (id) {
       inMemoryItems = items.filter((it) => it.id !== id);
+      await kvSet('wan_baocao_data', inMemoryItems);
       try {
         fs.writeFileSync('/tmp/baocao_data.json', JSON.stringify(inMemoryItems, null, 2), 'utf-8');
       } catch {}

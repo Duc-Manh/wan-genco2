@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { verifyServerToken } from './auth.js';
+import { kvGet, kvSet } from './kv.js';
 
 let inMemoryItems = null;
 
@@ -25,7 +26,7 @@ function getInitialInforData() {
   return inMemoryItems;
 }
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   const origin = req.headers.origin || '';
   if (origin.endsWith('.vercel.app') || origin.includes('localhost') || origin.includes('127.0.0.1')) {
     res.setHeader('Access-Control-Allow-Origin', origin);
@@ -37,8 +38,16 @@ export default function handler(req, res) {
     return res.status(200).end();
   }
 
-  // GET: Trả về danh sách thông tin phần tử
+  // GET: Trả về danh sách thông tin phần tử (ưu tiên Cloud KV)
   if (req.method === 'GET') {
+    try {
+      const kvData = await kvGet('wan_infor_data');
+      if (Array.isArray(kvData) && kvData.length > 0) {
+        inMemoryItems = kvData;
+        return res.status(200).json(inMemoryItems);
+      }
+    } catch {}
+
     const items = getInitialInforData();
     return res.status(200).json(items);
   }
@@ -57,7 +66,7 @@ export default function handler(req, res) {
   if (req.method === 'POST') {
     try {
       const payload = req.body || {};
-      let items = getInitialInforData();
+      let items = (await kvGet('wan_infor_data')) || getInitialInforData();
 
       if (Array.isArray(payload)) {
         items = payload;
@@ -82,6 +91,9 @@ export default function handler(req, res) {
         }
         inMemoryItems = items;
       }
+
+      // Lưu vĩnh viễn lên Cloud KV
+      await kvSet('wan_infor_data', items);
 
       // Cố gắng ghi vào /tmp để giữ lại trạng thái trong runtime lambda
       try {
