@@ -8,6 +8,7 @@ import './build.ts';
 const ROOT_DIR = process.cwd();
 const PORT = Number(process.env.PORT || 3000);
 const DATA_FILE = path.join(ROOT_DIR, 'data', 'baocao.json');
+const INFOR_DATA_FILE = path.join(ROOT_DIR, 'data', 'infor.json');
 
 const ADMIN_HASH = process.env.WAN_ADMIN_HASH || '45b8778b307f91d4e32dd17b51b02f4b95ff5b7c10e66485b6275cdf294d3105';
 const SERVER_SECRET = process.env.WAN_SERVER_SECRET || 'evngenco2-wan-sec-2026-auth-sig';
@@ -72,6 +73,40 @@ function saveBaocaoAndSyncXlsx(items: any[], callback?: () => void) {
   } catch (err) {
     console.error('Error saving baocao.json:', err);
     if (callback) callback();
+  }
+}
+
+function readInforJson(): any[] {
+  try {
+    if (fs.existsSync(INFOR_DATA_FILE)) {
+      return JSON.parse(fs.readFileSync(INFOR_DATA_FILE, 'utf-8'));
+    }
+    if (fs.existsSync('/tmp/infor_data.json')) {
+      return JSON.parse(fs.readFileSync('/tmp/infor_data.json', 'utf-8'));
+    }
+  } catch {}
+  return [];
+}
+
+function saveInforAndSyncXlsx(items: any[], callback?: (err?: any) => void) {
+  try {
+    fs.mkdirSync(path.dirname(INFOR_DATA_FILE), { recursive: true });
+    fs.writeFileSync(INFOR_DATA_FILE, JSON.stringify(items, null, 2), 'utf-8');
+    const distData = path.join(ROOT_DIR, 'dist', 'data', 'infor.json');
+    if (fs.existsSync(path.dirname(distData))) {
+      try { fs.copyFileSync(INFOR_DATA_FILE, distData); } catch {}
+    }
+    execFile(
+      'python3',
+      [path.join(ROOT_DIR, 'scripts', 'generate_infor_excel.py')],
+      (err) => {
+        if (err) console.error('Error updating infor.xlsx:', err);
+        if (callback) callback(err);
+      }
+    );
+  } catch (err) {
+    console.error('Error saving infor.json:', err);
+    if (callback) callback(err);
   }
 }
 
@@ -195,6 +230,74 @@ const server = http.createServer((req, res) => {
           saveBaocaoAndSyncXlsx(items, () => {
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ success: true, message: 'Đã xóa hàng trong baocao.xlsx', items }));
+          });
+        } catch {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Invalid JSON' }));
+        }
+      });
+      return;
+    }
+  }
+
+  // API Route /api/infor
+  if (reqUrl === '/api/infor') {
+    if (req.method === 'GET') {
+      const items = readInforJson();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(items));
+      return;
+    }
+
+    // Require authentication token for state modifications
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+    if (!verifyToken(token)) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Yêu cầu quyền Quản trị viên để thực hiện thao tác.' }));
+      return;
+    }
+
+    if (req.method === 'POST') {
+      let body = '';
+      req.on('data', (chunk) => {
+        body += chunk;
+      });
+      req.on('end', () => {
+        try {
+          const payload = JSON.parse(body || '{}');
+          let items = readInforJson();
+
+          if (Array.isArray(payload)) {
+            items = payload;
+          } else if (payload && payload.id) {
+            const targetId = String(payload.id);
+            const idx = items.findIndex((it: any) => String(it.id) === targetId);
+            if (idx !== -1) {
+              if (payload.parameter !== undefined) items[idx].parameter = String(payload.parameter);
+              if (payload.categoryCode !== undefined) items[idx].categoryCode = payload.categoryCode;
+              if (payload.categoryName !== undefined) items[idx].categoryName = payload.categoryName;
+              if (payload.title !== undefined) items[idx].title = payload.title;
+              if (payload.subtitle !== undefined) items[idx].subtitle = payload.subtitle;
+              if (payload.regionCode !== undefined) items[idx].regionCode = payload.regionCode;
+              if (payload.regionName !== undefined) items[idx].regionName = payload.regionName;
+              if (payload.strokeColor !== undefined) items[idx].strokeColor = payload.strokeColor;
+              if (payload.strokeWidth !== undefined) items[idx].strokeWidth = payload.strokeWidth;
+              if (payload.fillColor !== undefined) items[idx].fillColor = payload.fillColor;
+              if (payload.x1 !== undefined) items[idx].x1 = payload.x1;
+              if (payload.y1 !== undefined) items[idx].y1 = payload.y1;
+              if (payload.notes !== undefined) items[idx].notes = payload.notes;
+            }
+          }
+
+          saveInforAndSyncXlsx(items, (err) => {
+            if (err) {
+              res.writeHead(500, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Lỗi khi cập nhật infor.xlsx', details: String(err) }));
+            } else {
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ success: true, count: items.length }));
+            }
           });
         } catch {
           res.writeHead(400, { 'Content-Type': 'application/json' });

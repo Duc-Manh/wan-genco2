@@ -20,6 +20,7 @@ import { AuthWidget, AuthManager } from './authWidget.ts';
 interface ElementCustomEdit {
   plainText?: string;
   category?: DeviceCategory | CableCategory;
+  parameter?: string;
   region?: RegionId;
   fillColor?: string;
   strokeColor?: string;
@@ -175,6 +176,7 @@ export class WanApp {
             }
           }
           if (edit.category) v.category = edit.category as DeviceCategory;
+          if (edit.parameter !== undefined) v.parameter = edit.parameter;
           if (edit.region) v.region = edit.region;
           if (edit.fillColor !== undefined) v.fillColor = edit.fillColor;
           if (edit.strokeColor !== undefined) v.strokeColor = edit.strokeColor;
@@ -193,6 +195,7 @@ export class WanApp {
             }
           }
           if (edit.category) e.category = edit.category as CableCategory;
+          if (edit.parameter !== undefined) e.parameter = edit.parameter;
           if (edit.region) e.region = edit.region;
           if (edit.strokeColor !== undefined) e.strokeColor = edit.strokeColor;
           if (edit.strokeWidth !== undefined) e.strokeWidth = edit.strokeWidth;
@@ -227,6 +230,68 @@ export class WanApp {
     } catch {}
   }
 
+  private async loadInforData(): Promise<void> {
+    try {
+      let items: any[] = [];
+      const res = await fetch('/api/infor').catch(() => null);
+      if (res && res.ok) {
+        items = await res.json();
+      } else {
+        const fallbackRes = await fetch('/data/infor.json').catch(() => null);
+        if (fallbackRes && fallbackRes.ok) {
+          items = await fallbackRes.json();
+        }
+      }
+
+      if (Array.isArray(items) && items.length > 0) {
+        const itemMap = new Map<string, any>();
+        for (const it of items) {
+          if (it.id) itemMap.set(String(it.id), it);
+        }
+
+        for (const v of this.vertices) {
+          const it = itemMap.get(String(v.id));
+          if (it) {
+            if (it.parameter !== undefined && it.parameter !== '') v.parameter = it.parameter;
+            if (it.categoryCode && CATEGORY_LABELS[it.categoryCode as DeviceCategory]) {
+              v.category = it.categoryCode as DeviceCategory;
+            }
+            if (it.regionCode && REGION_LABELS[it.regionCode as RegionId]) {
+              v.region = it.regionCode as RegionId;
+            }
+          }
+        }
+
+        for (const e of this.edges) {
+          const it = itemMap.get(String(e.id));
+          if (it) {
+            if (it.parameter !== undefined && it.parameter !== '') e.parameter = it.parameter;
+            if (it.categoryCode && CATEGORY_LABELS[it.categoryCode as CableCategory]) {
+              e.category = it.categoryCode as CableCategory;
+            }
+            if (it.regionCode && REGION_LABELS[it.regionCode as RegionId]) {
+              e.region = it.regionCode as RegionId;
+            }
+          }
+        }
+
+        // Re-apply local custom edits over the loaded base data
+        this.loadCustomEdits();
+        this.rebuildLookupMaps();
+        if (this.svgElement) {
+          this.initDiagramSvg();
+          this.updateViewportTransform();
+        }
+        this.renderSidebarContent();
+        if (this.selectedId) {
+          this.renderInspector();
+        }
+      }
+    } catch (err) {
+      console.warn('Could not load infor dataset:', err);
+    }
+  }
+
   private rebuildLookupMaps(): void {
     this.vertexMap.clear();
     this.edgeMap.clear();
@@ -245,6 +310,7 @@ export class WanApp {
     this.bindEvents();
     this.renderSidebarContent();
     this.renderInspector();
+    this.loadInforData();
 
     // Trên màn hình tablet/mobile, mặc định thu gọn sidebar để không che khuất sơ đồ
     if (window.innerWidth <= 860) {
@@ -1260,34 +1326,29 @@ export class WanApp {
 
         <div class="wan-inspector-body">
           <div class="wan-prop-group">
-            <div class="wan-prop-row wan-prop-row-align">
-              <span>Phân loại:</span>
+            ${
+              !isAuthed
+                ? `
+              <div class="wan-prop-row">
+                <span>Phân loại:</span>
+                <strong>${CATEGORY_LABELS[v.category] || v.category}</strong>
+              </div>
               ${
-                isAuthed
+                v.parameter
                   ? `
-                <select id="edit-v-category" class="wan-select-inline" title="Nhấp để thay đổi phân loại thiết bị">
-                  ${Object.entries(CATEGORY_LABELS)
-                    .filter(([cat]) => !cat.startsWith('cable-') && cat !== 'frame')
-                    .map(([cat, label]) => `<option value="${cat}" ${v.category === cat ? 'selected' : ''}>${label}</option>`)
-                    .join('')}
-                </select>
+                <div class="wan-prop-row">
+                  <span>Thông số KT:</span>
+                  <strong style="color: #2563eb;">${v.parameter}</strong>
+                </div>
               `
-                  : `<strong>${CATEGORY_LABELS[v.category] || v.category}</strong>`
+                  : ''
               }
-            </div>
-            <div class="wan-prop-row wan-prop-row-align">
+            `
+                : ''
+            }
+            <div class="wan-prop-row">
               <span>Khu vực:</span>
-              ${
-                isAuthed
-                  ? `
-                <select id="edit-v-region" class="wan-select-inline" title="Nhấp để thay đổi khu vực địa lý">
-                  ${Object.entries(REGION_LABELS)
-                    .map(([reg, label]) => `<option value="${reg}" ${v.region === reg ? 'selected' : ''}>${label}</option>`)
-                    .join('')}
-                </select>
-              `
-                  : `<strong>${REGION_LABELS[v.region]}</strong>`
-              }
+              <strong>${REGION_LABELS[v.region]}</strong>
             </div>
             <div class="wan-prop-row">
               <span>Tọa độ (X, Y):</span>
@@ -1305,8 +1366,21 @@ export class WanApp {
                 ? `
               <div class="wan-auth-badge-admin">👑 Quyền: Quản trị viên (Được phép sửa)</div>
               <label class="wan-field">
-                <span>Nhãn hiển thị (Title)</span>
+                <span>Nhãn hiển thị</span>
                 <input id="edit-v-text" type="text" value="${v.plainText.replace(/"/g, '&quot;')}" />
+              </label>
+              <label class="wan-field">
+                <span>Phân loại</span>
+                <select id="edit-v-category" class="wan-select">
+                  ${Object.entries(CATEGORY_LABELS)
+                    .filter(([cat]) => !cat.startsWith('cable-') && cat !== 'frame')
+                    .map(([cat, label]) => `<option value="${cat}" ${v.category === cat ? 'selected' : ''}>${label}</option>`)
+                    .join('')}
+                </select>
+              </label>
+              <label class="wan-field">
+                <span>Thông số kỹ thuật</span>
+                <input id="edit-v-parameter" type="text" placeholder="Nhập thông số kỹ thuật (vd: STM-16, 10GE, IP/MPLS...)" value="${(v.parameter || '').replace(/"/g, '&quot;')}" />
               </label>
               <div class="wan-field-row">
                 <label class="wan-field">
@@ -1330,7 +1404,7 @@ export class WanApp {
               </div>
               <div class="wan-inspector-actions">
                 <button id="btn-focus-selected" class="wan-tool-btn wan-btn-primary">Phóng tới phần tử</button>
-                <button id="btn-apply-edit" class="wan-tool-btn wan-btn-success">Lưu &amp; Cập nhật</button>
+                <button id="btn-apply-edit" class="wan-tool-btn wan-btn-success">Cập nhật</button>
                 <button id="btn-reset-edit" class="wan-tool-btn" title="Khôi phục thông tin gốc">Đặt lại</button>
               </div>
             `
@@ -1340,7 +1414,7 @@ export class WanApp {
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                   <span>Chế độ chỉ xem (Khóa chỉnh sửa)</span>
                 </div>
-                <p class="wan-auth-lock-desc">Đăng nhập với <strong>Quyền: Quản trị viên</strong> để chỉnh sửa tên, phân loại, khu vực và màu sắc của phần tử này.</p>
+                <p class="wan-auth-lock-desc">Đăng nhập với <strong>Quyền: Quản trị viên</strong> để chỉnh sửa tên, phân loại, thông số kỹ thuật và màu sắc của phần tử này.</p>
                 <button id="btn-prompt-login" class="wan-tool-btn wan-btn-primary" style="width: 100%; margin-top: 8px;">Đăng nhập Quản trị viên</button>
               </div>
               <div class="wan-inspector-actions">
@@ -1386,10 +1460,10 @@ export class WanApp {
         this.resetCustomEdit(v.id);
         this.showToast(`Đã khôi phục thông tin gốc của phần tử #${v.id}!`);
       });
-      inspector.querySelector('#btn-apply-edit')?.addEventListener('click', () => {
+      inspector.querySelector('#btn-apply-edit')?.addEventListener('click', async () => {
         const newText = (inspector.querySelector('#edit-v-text') as HTMLInputElement).value.trim();
-        const newCat = (inspector.querySelector('#edit-v-category') as HTMLSelectElement).value as DeviceCategory;
-        const newReg = (inspector.querySelector('#edit-v-region') as HTMLSelectElement).value as RegionId;
+        const newCat = ((inspector.querySelector('#edit-v-category') as HTMLSelectElement)?.value as DeviceCategory) || v.category;
+        const newParam = (inspector.querySelector('#edit-v-parameter') as HTMLInputElement)?.value.trim() || '';
         const newFill = (inspector.querySelector('#edit-v-fill') as HTMLInputElement).value;
         const newStroke = (inspector.querySelector('#edit-v-stroke') as HTMLInputElement).value;
         const newX = Number((inspector.querySelector('#edit-v-x') as HTMLInputElement).value);
@@ -1397,7 +1471,7 @@ export class WanApp {
 
         v.plainText = newText;
         v.category = newCat;
-        v.region = newReg;
+        v.parameter = newParam;
         if (v.lines.length > 0 && v.lines[0].runs.length > 0) {
           const baseRun = v.lines[0].runs[0];
           v.lines = [{ align: v.align, runs: [{ ...baseRun, text: newText }] }];
@@ -1420,24 +1494,53 @@ export class WanApp {
         }
         if (v.fillColor !== 'none') v.fillColor = newFill;
         if (v.strokeColor !== 'none') v.strokeColor = newStroke;
-        v.x = newX;
-        v.y = newY;
+        if (!isNaN(newX)) v.x = newX;
+        if (!isNaN(newY)) v.y = newY;
 
         this.saveCustomEdit(v.id, {
           plainText: newText,
           category: newCat,
-          region: newReg,
+          parameter: newParam,
           fillColor: newFill,
           strokeColor: newStroke,
-          x: newX,
-          y: newY,
+          x: v.x,
+          y: v.y,
         });
+
+        // Gửi cập nhật lên backend để ghi vào infor.json và đồng bộ infor.xlsx
+        try {
+          const token = AuthManager.getToken();
+          const res = await fetch('/api/infor', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              id: v.id,
+              parameter: newParam,
+              categoryCode: newCat,
+              categoryName: CATEGORY_LABELS[newCat] || newCat,
+              title: newText,
+              fillColor: newFill,
+              strokeColor: newStroke,
+              x1: v.x,
+              y1: v.y,
+            }),
+          });
+          if (res.ok) {
+            this.showToast(`Đã lưu Phân loại & Thông số kỹ thuật của #${v.id} vào infor.xlsx!`);
+          } else {
+            this.showToast(`Đã lưu phần tử #${v.id} vào bộ nhớ cục bộ!`);
+          }
+        } catch {
+          this.showToast(`Đã lưu phần tử #${v.id} vào bộ nhớ cục bộ!`);
+        }
 
         this.initDiagramSvg();
         this.updateViewportTransform();
         this.renderInspector();
         this.renderSidebarContent();
-        this.showToast(`Đã lưu Phân loại, Khu vực và Nhãn phần tử #${v.id} thành công!`);
       });
 
       inspector.querySelectorAll('.wan-nearby-item').forEach((btn) => {
@@ -1461,34 +1564,29 @@ export class WanApp {
 
         <div class="wan-inspector-body">
           <div class="wan-prop-group">
-            <div class="wan-prop-row wan-prop-row-align">
-              <span>Đơn vị vận hành:</span>
+            ${
+              !isAuthed
+                ? `
+              <div class="wan-prop-row">
+                <span>Đơn vị vận hành:</span>
+                <strong>${CATEGORY_LABELS[e.category] || e.category}</strong>
+              </div>
               ${
-                isAuthed
+                e.parameter
                   ? `
-                <select id="edit-e-category" class="wan-select-inline" title="Nhấp để thay đổi phân loại tuyến cáp">
-                  ${Object.entries(CATEGORY_LABELS)
-                    .filter(([cat]) => cat.startsWith('cable-'))
-                    .map(([cat, label]) => `<option value="${cat}" ${e.category === cat ? 'selected' : ''}>${label}</option>`)
-                    .join('')}
-                </select>
+                <div class="wan-prop-row">
+                  <span>Thông số KT:</span>
+                  <strong style="color: #2563eb;">${e.parameter}</strong>
+                </div>
               `
-                  : `<strong>${CATEGORY_LABELS[e.category] || e.category}</strong>`
+                  : ''
               }
-            </div>
-            <div class="wan-prop-row wan-prop-row-align">
+            `
+                : ''
+            }
+            <div class="wan-prop-row">
               <span>Khu vực:</span>
-              ${
-                isAuthed
-                  ? `
-                <select id="edit-e-region" class="wan-select-inline" title="Nhấp để thay đổi khu vực địa lý">
-                  ${Object.entries(REGION_LABELS)
-                    .map(([reg, label]) => `<option value="${reg}" ${e.region === reg ? 'selected' : ''}>${label}</option>`)
-                    .join('')}
-                </select>
-              `
-                  : `<strong>${REGION_LABELS[e.region]}</strong>`
-              }
+              <strong>${REGION_LABELS[e.region]}</strong>
             </div>
             <div class="wan-prop-row">
               <span>Điểm đầu:</span>
@@ -1513,6 +1611,19 @@ export class WanApp {
                 <span>Nhãn dung lượng / Tuyến cáp</span>
                 <input id="edit-e-text" type="text" value="${e.labelPlainText.replace(/"/g, '&quot;')}" />
               </label>
+              <label class="wan-field">
+                <span>Phân loại</span>
+                <select id="edit-e-category" class="wan-select">
+                  ${Object.entries(CATEGORY_LABELS)
+                    .filter(([cat]) => cat.startsWith('cable-') || cat === 'other')
+                    .map(([cat, label]) => `<option value="${cat}" ${e.category === cat ? 'selected' : ''}>${label}</option>`)
+                    .join('')}
+                </select>
+              </label>
+              <label class="wan-field">
+                <span>Thông số kỹ thuật</span>
+                <input id="edit-e-parameter" type="text" placeholder="Nhập thông số kỹ thuật (vd: 24 sợi G.652, 10Gbps...)" value="${(e.parameter || '').replace(/"/g, '&quot;')}" />
+              </label>
               <div class="wan-field-row">
                 <label class="wan-field">
                   <span>Màu tuyến cáp</span>
@@ -1525,7 +1636,7 @@ export class WanApp {
               </div>
               <div class="wan-inspector-actions">
                 <button id="btn-focus-selected" class="wan-tool-btn wan-btn-primary">Phóng tới tuyến cáp</button>
-                <button id="btn-apply-edge-edit" class="wan-tool-btn wan-btn-success">Lưu &amp; Cập nhật</button>
+                <button id="btn-apply-edge-edit" class="wan-tool-btn wan-btn-success">Cập nhật</button>
                 <button id="btn-reset-edge-edit" class="wan-tool-btn" title="Khôi phục thông tin gốc">Đặt lại</button>
               </div>
             `
@@ -1535,7 +1646,7 @@ export class WanApp {
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                   <span>Chế độ chỉ xem (Khóa chỉnh sửa)</span>
                 </div>
-                <p class="wan-auth-lock-desc">Đăng nhập với <strong>Quyền: Quản trị viên</strong> để chỉnh sửa nhãn, loại cáp và màu sắc tuyến kết nối.</p>
+                <p class="wan-auth-lock-desc">Đăng nhập với <strong>Quyền: Quản trị viên</strong> để chỉnh sửa nhãn, loại cáp, thông số kỹ thuật và màu sắc tuyến kết nối.</p>
                 <button id="btn-prompt-login" class="wan-tool-btn wan-btn-primary" style="width: 100%; margin-top: 8px;">Đăng nhập Quản trị viên</button>
               </div>
               <div class="wan-inspector-actions">
@@ -1560,18 +1671,18 @@ export class WanApp {
         this.resetCustomEdit(e.id);
         this.showToast(`Đã khôi phục thông tin gốc của tuyến cáp #${e.id}!`);
       });
-      inspector.querySelector('#btn-apply-edge-edit')?.addEventListener('click', () => {
+      inspector.querySelector('#btn-apply-edge-edit')?.addEventListener('click', async () => {
         const newText = (inspector.querySelector('#edit-e-text') as HTMLInputElement).value.trim();
-        const newCat = (inspector.querySelector('#edit-e-category') as HTMLSelectElement).value as CableCategory;
-        const newReg = (inspector.querySelector('#edit-e-region') as HTMLSelectElement).value as RegionId;
+        const newCat = ((inspector.querySelector('#edit-e-category') as HTMLSelectElement)?.value as CableCategory) || e.category;
+        const newParam = (inspector.querySelector('#edit-e-parameter') as HTMLInputElement)?.value.trim() || '';
         const newColor = (inspector.querySelector('#edit-e-color') as HTMLInputElement).value;
         const newW = Number((inspector.querySelector('#edit-e-width') as HTMLInputElement).value);
 
         e.labelPlainText = newText;
         e.category = newCat;
-        e.region = newReg;
+        e.parameter = newParam;
         e.strokeColor = newColor;
-        e.strokeWidth = newW;
+        if (!isNaN(newW) && newW > 0) e.strokeWidth = newW;
         if (e.labelLines.length > 0 && e.labelLines[0].runs.length > 0) {
           const baseRun = e.labelLines[0].runs[0];
           e.labelLines = [{ align: 'center', runs: [{ ...baseRun, text: newText }] }];
@@ -1596,16 +1707,43 @@ export class WanApp {
         this.saveCustomEdit(e.id, {
           plainText: newText,
           category: newCat,
-          region: newReg,
+          parameter: newParam,
           strokeColor: newColor,
-          strokeWidth: newW,
+          strokeWidth: e.strokeWidth,
         });
+
+        // Gửi cập nhật lên backend để ghi vào infor.json và đồng bộ infor.xlsx
+        try {
+          const token = AuthManager.getToken();
+          const res = await fetch('/api/infor', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              id: e.id,
+              parameter: newParam,
+              categoryCode: newCat,
+              categoryName: CATEGORY_LABELS[newCat] || newCat,
+              title: newText,
+              strokeColor: newColor,
+              strokeWidth: e.strokeWidth,
+            }),
+          });
+          if (res.ok) {
+            this.showToast(`Đã lưu Phân loại & Thông số kỹ thuật của tuyến #${e.id} vào infor.xlsx!`);
+          } else {
+            this.showToast(`Đã lưu tuyến #${e.id} vào bộ nhớ cục bộ!`);
+          }
+        } catch {
+          this.showToast(`Đã lưu tuyến #${e.id} vào bộ nhớ cục bộ!`);
+        }
 
         this.initDiagramSvg();
         this.updateViewportTransform();
         this.renderInspector();
         this.renderSidebarContent();
-        this.showToast(`Đã lưu Phân loại, Khu vực và Nhãn tuyến cáp #${e.id} thành công!`);
       });
     }
   }
@@ -1630,6 +1768,7 @@ export class WanApp {
       ? `${CATEGORY_LABELS[v.category]} • ${REGION_LABELS[v.region]}`
       : `${CATEGORY_LABELS[e?.category || '']} • ${REGION_LABELS[e?.region || 'all']}`;
 
+    const param = v ? v.parameter : e?.parameter;
     const isAuthed = AuthManager.isAuthenticated();
 
     this.tooltipEl.innerHTML = `
@@ -1638,6 +1777,7 @@ export class WanApp {
         ${isAuthed ? '<span class="wan-tooltip-admin-tag" title="Nhấn chuột để chỉnh sửa thông tin">✏️ Quản trị</span>' : ''}
       </div>
       <div class="wan-tooltip-sub">${subtitle}</div>
+      ${param ? `<div class="wan-tooltip-param"><span class="wan-tooltip-param-label">Thông số KT:</span>${param}</div>` : ''}
     `;
     this.tooltipEl.classList.remove('hidden');
 

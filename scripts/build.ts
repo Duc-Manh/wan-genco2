@@ -66,6 +66,9 @@ const total = transpileDir(SRC_DIR, DIST_DIR);
 buildStandaloneBundle();
 
 // Ensure assets and root files are synced to dist
+if (fs.existsSync(path.join(ROOT_DIR, 'data'))) {
+  fs.cpSync(path.join(ROOT_DIR, 'data'), path.join(DIST_DIR, 'data'), { recursive: true });
+}
 if (fs.existsSync(path.join(ROOT_DIR, 'assets'))) {
   fs.cpSync(path.join(ROOT_DIR, 'assets'), path.join(DIST_DIR, 'assets'), { recursive: true });
 }

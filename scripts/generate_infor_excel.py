@@ -135,13 +135,19 @@ def create_multi_sheet_xlsx(filepath, sheets_data):
             zf.writestr(f"xl/worksheets/sheet{i}.xml", s_xml)
 
 if __name__ == "__main__":
-    json_path = "/tmp/infor_data.json"
-    if not os.path.exists(json_path):
-        print(f"Error: {json_path} does not exist", file=sys.stderr)
+    json_path = "data/infor.json"
+    if len(sys.argv) > 2 and sys.argv[1] == "--json":
+        raw = sys.argv[2]
+        all_items = json.loads(raw)
+    elif os.path.exists(json_path):
+        with open(json_path, "r", encoding="utf-8") as f:
+            all_items = json.load(f)
+    elif os.path.exists("/tmp/infor_data.json"):
+        with open("/tmp/infor_data.json", "r", encoding="utf-8") as f:
+            all_items = json.load(f)
+    else:
+        print(f"Error: Neither {json_path} nor /tmp/infor_data.json exists", file=sys.stderr)
         sys.exit(1)
-
-    with open(json_path, "r", encoding="utf-8") as f:
-        all_items = json.load(f)
 
     headers = [
         "STT",
@@ -154,6 +160,7 @@ if __name__ == "__main__":
         "Ma_KhuVuc",
         "Ten_KhuVuc",
         "Tram_TrucThuoc",
+        "parameter",
         "ToaDo_X1",
         "ToaDo_Y1",
         "ToaDo_X2_Hoac_Rong",
@@ -178,6 +185,7 @@ if __name__ == "__main__":
         14,  # Ma_KhuVuc
         28,  # Ten_KhuVuc
         30,  # Tram_TrucThuoc
+        26,  # parameter (Thông số kỹ thuật)
         12,  # ToaDo_X1
         12,  # ToaDo_Y1
         16,  # ToaDo_X2_Hoac_Rong
@@ -194,34 +202,35 @@ if __name__ == "__main__":
     def item_to_row(item, idx):
         return [
             idx,
-            item["id"],
-            item["type"],
-            item["title"],
-            item["subtitle"],
-            item["categoryCode"],
-            item["categoryName"],
-            item["regionCode"],
-            item["regionName"],
-            item["station"],
-            item["x1"],
-            item["y1"],
-            item["x2_or_w"],
-            item["y2_or_h"],
-            item["strokeColor"],
-            item["strokeWidth"],
-            item["fillColor"],
-            item["lineStyle"],
-            item["shape"],
-            item["hasTooltip"],
-            item["notes"]
+            item.get("id", ""),
+            item.get("type", ""),
+            item.get("title", ""),
+            item.get("subtitle", ""),
+            item.get("categoryCode", ""),
+            item.get("categoryName", ""),
+            item.get("regionCode", ""),
+            item.get("regionName", ""),
+            item.get("station", ""),
+            item.get("parameter", ""),
+            item.get("x1", 0),
+            item.get("y1", 0),
+            item.get("x2_or_w", 0),
+            item.get("y2_or_h", 0),
+            item.get("strokeColor", ""),
+            item.get("strokeWidth", 1),
+            item.get("fillColor", ""),
+            item.get("lineStyle", ""),
+            item.get("shape", ""),
+            item.get("hasTooltip", "Có"),
+            item.get("notes", "")
         ]
 
     rows_all = [item_to_row(it, i) for i, it in enumerate(all_items, start=1)]
     
-    vertices_items = [it for it in all_items if it["type"].startswith("Thiết bị")]
+    vertices_items = [it for it in all_items if str(it.get("type", "")).startswith("Thiết bị")]
     rows_vertices = [item_to_row(it, i) for i, it in enumerate(vertices_items, start=1)]
     
-    edges_items = [it for it in all_items if it["type"].startswith("Tuyến cáp")]
+    edges_items = [it for it in all_items if str(it.get("type", "")).startswith("Tuyến cáp")]
     rows_edges = [item_to_row(it, i) for i, it in enumerate(edges_items, start=1)]
 
     sheets = [
@@ -254,5 +263,4 @@ if __name__ == "__main__":
 
     for out in output_files:
         create_multi_sheet_xlsx(out, sheets)
-        print(f"Created {out} successfully ({len(rows_all)} rows, 3 sheets)!")
-
+        print(f"Created {out} successfully ({len(rows_all)} rows, with parameter column)!")

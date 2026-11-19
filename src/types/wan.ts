@@ -117,6 +117,7 @@ export interface WanVertex {
   lines: WanTextLine[];
   category: DeviceCategory;
   region: RegionId;
+  parameter?: string;
 }
 
 export interface WanEdge {
@@ -139,6 +140,7 @@ export interface WanEdge {
   labelOffsetY: number;
   category: CableCategory;
   region: RegionId;
+  parameter?: string;
 }
 
 export interface WanStationInfo {
