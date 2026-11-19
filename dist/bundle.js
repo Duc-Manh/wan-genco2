@@ -1343,13 +1343,19 @@ class GanttModal {
         <div class="${rowClass}" data-task-id="${t.id}">
           <div class="wan-col-stt">${t.stt}</div>
           <div class="wan-col-name" style="padding-left: ${indentPx + 8}px;">
-            <span class="wan-task-title" title="${t.name}">${t.name}</span>
+            <div class="wan-col-name-scroll">
+              <span class="wan-task-title" title="${t.name}">${t.name}</span>
+            </div>
             ${isActive && !isGroup ? '<span class="wan-tag-active-now" title="Công việc đang diễn ra trong thời gian thực">Đang thực hiện</span>' : ''}
           </div>
           <div class="wan-col-days">${t.days !== null ? `${t.days} ng` : '-'}</div>
           <div class="wan-col-start">${formatDate(t.start)}</div>
           <div class="wan-col-end">${formatDate(t.end)}</div>
-          <div class="wan-col-unit" title="${t.unit}">${t.unit || '-'}</div>
+          <div class="wan-col-unit" title="${t.unit}">
+            <div class="wan-col-unit-scroll">
+              <span class="wan-unit-title">${t.unit || '-'}</span>
+            </div>
+          </div>
         </div>
       `;
 
@@ -1404,11 +1410,19 @@ class GanttModal {
         <div class="wan-gantt-table-pane">
           <div class="wan-gantt-table-header">
             <div class="wan-col-stt">STT</div>
-            <div class="wan-col-name">Nội dung công việc</div>
+            <div class="wan-col-name">
+              <div class="wan-col-name-scroll">
+                <span class="wan-task-title" title="Nội dung công việc">Nội dung công việc</span>
+              </div>
+            </div>
             <div class="wan-col-days">Thời gian</div>
             <div class="wan-col-start">Bắt đầu</div>
             <div class="wan-col-end">Kết thúc</div>
-            <div class="wan-col-unit">Đơn vị</div>
+            <div class="wan-col-unit">
+              <div class="wan-col-unit-scroll">
+                <span class="wan-unit-title" title="Đơn vị">Đơn vị</span>
+              </div>
+            </div>
           </div>
           <div class="wan-gantt-table-body" id="gantt-table-body">
             ${tableRowsHtml}
@@ -1544,6 +1558,41 @@ class GanttModal {
         const id = (row               ).dataset.taskId;
         if (id) {
           bodyContainer.querySelectorAll(`[data-task-id="${id}"]`).forEach((r) => r.classList.remove('hover'));
+        }
+      });
+    });
+
+    // Hiệu ứng hover di chuyển hiển thị đầy đủ nội dung cho cột Nội dung và Đơn vị
+    this.setupTableMarquee(bodyContainer);
+  }
+
+          setupTableMarquee(container             )       {
+    const scrollCells = container.querySelectorAll             ('.wan-col-name, .wan-col-unit');
+    scrollCells.forEach((cell) => {
+      cell.addEventListener('mouseenter', () => {
+        const textSpan = cell.querySelector             ('.wan-task-title, .wan-unit-title');
+        const scrollWrap = cell.querySelector             ('.wan-col-name-scroll, .wan-col-unit-scroll');
+        if (!textSpan || !scrollWrap) return;
+
+        // Tính toán độ chênh lệch giữa toàn bộ chiều dài nội dung và khung nhìn thấy
+        const wrapWidth = scrollWrap.clientWidth;
+        const textWidth = textSpan.scrollWidth;
+        const diff = textWidth - wrapWidth;
+
+        if (diff > 4) {
+          textSpan.classList.add('is-overflowing');
+          textSpan.style.setProperty('--marquee-distance', `-${Math.ceil(diff + 16)}px`);
+          const duration = Math.max(3, Math.min(12, Math.ceil(diff / 40) + 1.5));
+          textSpan.style.setProperty('--marquee-duration', `${duration}s`);
+        } else {
+          textSpan.classList.remove('is-overflowing');
+        }
+      });
+
+      cell.addEventListener('mouseleave', () => {
+        const textSpan = cell.querySelector             ('.wan-task-title, .wan-unit-title');
+        if (textSpan) {
+          textSpan.style.transform = '';
         }
       });
     });

@@ -1661,9 +1661,27 @@ body,
   flex: 1;
   min-width: 0;
   padding: 0 8px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.wan-col-name-scroll {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  position: relative;
+  white-space: nowrap;
+}
+
+.wan-task-title {
+  display: inline-block;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 100%;
+  transition: transform 0.35s ease;
+  will-change: transform;
 }
 
 .wan-col-days {
@@ -1688,11 +1706,51 @@ body,
   width: 90px;
   padding: 0 8px;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.wan-col-unit-scroll {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  position: relative;
+  white-space: nowrap;
+}
+
+.wan-unit-title {
+  display: inline-block;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: #64748b;
-  font-size: 11px;
+  max-width: 100%;
+  transition: transform 0.35s ease;
+  will-change: transform;
+}
+
+/* Hover auto-scroll (marquee) effect to reveal full text */
+.wan-col-name:hover .wan-task-title.is-overflowing,
+.wan-col-unit:hover .wan-unit-title.is-overflowing {
+  overflow: visible;
+  text-overflow: clip;
+  max-width: none;
+  animation: wan-marquee-pingpong var(--marquee-duration, 5s) cubic-bezier(0.42, 0, 0.58, 1) infinite;
+  animation-delay: 0.25s;
+}
+
+@keyframes wan-marquee-pingpong {
+  0%, 18% {
+    transform: translateX(0);
+  }
+  50%, 72% {
+    transform: translateX(var(--marquee-distance, -100px));
+  }
+  94%, 100% {
+    transform: translateX(0);
+  }
 }
 
 /* Timeline Pane */
