@@ -3196,22 +3196,22 @@ body,
 }
 
 .wan-region-btn-bangthong {
-  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+  background: #2563eb !important;
   color: #ffffff !important;
-  border-color: #0284c7 !important;
-  box-shadow: 0 1px 3px rgba(2, 132, 199, 0.35);
+  border-color: #2563eb !important;
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.35);
   font-weight: 700 !important;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
 }
 
 .wan-region-btn-bangthong:hover {
-  background: linear-gradient(135deg, #0369a1 0%, #075985 100%) !important;
-  border-color: #0369a1 !important;
+  background: #1d4ed8 !important;
+  border-color: #1d4ed8 !important;
   color: #ffffff !important;
   transform: translateY(-1px);
-  box-shadow: 0 3px 6px rgba(2, 132, 199, 0.45);
+  box-shadow: 0 3px 6px rgba(37, 99, 235, 0.45);
 }
 
 /* ==========================================================================

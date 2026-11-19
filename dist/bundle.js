@@ -3320,9 +3320,6 @@ class WanApp {
     ).join('')}
           <div class="wan-region-divider"></div>
           <button class="wan-region-pill wan-region-btn-bangthong" id="btn-open-bangthong" title="Xem bảng thông tin Băng thông dự án (bangthong.xlsx)">
-            <svg class="wan-pill-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px; vertical-align:-1px;">
-              <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
-            </svg>
             Băng thông dự án
           </button>
         </nav>
