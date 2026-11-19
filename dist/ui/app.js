@@ -1198,6 +1198,24 @@ export class WanApp {
     }
   }
 
+          showToast(message        )       {
+    const existing = document.querySelector('.wan-app-toast');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.className = 'wan-app-toast';
+    toast.innerHTML = `
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      <span>${message}</span>
+    `;
+    document.body.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('show'));
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 250);
+    }, 2800);
+  }
+
           renderInspector()       {
     const inspector = this.container.querySelector('#wan-inspector')               ;
     if (!inspector) return;
@@ -1242,13 +1260,34 @@ export class WanApp {
 
         <div class="wan-inspector-body">
           <div class="wan-prop-group">
-            <div class="wan-prop-row">
+            <div class="wan-prop-row wan-prop-row-align">
               <span>Phân loại:</span>
-              <strong>${CATEGORY_LABELS[v.category] || v.category}</strong>
+              ${
+                isAuthed
+                  ? `
+                <select id="edit-v-category" class="wan-select-inline" title="Nhấp để thay đổi phân loại thiết bị">
+                  ${Object.entries(CATEGORY_LABELS)
+                    .filter(([cat]) => !cat.startsWith('cable-') && cat !== 'frame')
+                    .map(([cat, label]) => `<option value="${cat}" ${v.category === cat ? 'selected' : ''}>${label}</option>`)
+                    .join('')}
+                </select>
+              `
+                  : `<strong>${CATEGORY_LABELS[v.category] || v.category}</strong>`
+              }
             </div>
-            <div class="wan-prop-row">
+            <div class="wan-prop-row wan-prop-row-align">
               <span>Khu vực:</span>
-              <strong>${REGION_LABELS[v.region]}</strong>
+              ${
+                isAuthed
+                  ? `
+                <select id="edit-v-region" class="wan-select-inline" title="Nhấp để thay đổi khu vực địa lý">
+                  ${Object.entries(REGION_LABELS)
+                    .map(([reg, label]) => `<option value="${reg}" ${v.region === reg ? 'selected' : ''}>${label}</option>`)
+                    .join('')}
+                </select>
+              `
+                  : `<strong>${REGION_LABELS[v.region]}</strong>`
+              }
             </div>
             <div class="wan-prop-row">
               <span>Tọa độ (X, Y):</span>
@@ -1268,23 +1307,6 @@ export class WanApp {
               <label class="wan-field">
                 <span>Nhãn hiển thị (Title)</span>
                 <input id="edit-v-text" type="text" value="${v.plainText.replace(/"/g, '&quot;')}" />
-              </label>
-              <label class="wan-field">
-                <span>Phân loại thiết bị</span>
-                <select id="edit-v-category" class="wan-select">
-                  ${Object.entries(CATEGORY_LABELS)
-                    .filter(([cat]) => !cat.startsWith('cable-') && cat !== 'frame')
-                    .map(([cat, label]) => `<option value="${cat}" ${v.category === cat ? 'selected' : ''}>${label}</option>`)
-                    .join('')}
-                </select>
-              </label>
-              <label class="wan-field">
-                <span>Khu vực</span>
-                <select id="edit-v-region" class="wan-select">
-                  ${Object.entries(REGION_LABELS)
-                    .map(([reg, label]) => `<option value="${reg}" ${v.region === reg ? 'selected' : ''}>${label}</option>`)
-                    .join('')}
-                </select>
               </label>
               <div class="wan-field-row">
                 <label class="wan-field">
@@ -1362,6 +1384,7 @@ export class WanApp {
       });
       inspector.querySelector('#btn-reset-edit')?.addEventListener('click', () => {
         this.resetCustomEdit(v.id);
+        this.showToast(`Đã khôi phục thông tin gốc của phần tử #${v.id}!`);
       });
       inspector.querySelector('#btn-apply-edit')?.addEventListener('click', () => {
         const newText = (inspector.querySelector('#edit-v-text')                    ).value.trim();
@@ -1414,6 +1437,7 @@ export class WanApp {
         this.updateViewportTransform();
         this.renderInspector();
         this.renderSidebarContent();
+        this.showToast(`Đã lưu Phân loại, Khu vực và Nhãn phần tử #${v.id} thành công!`);
       });
 
       inspector.querySelectorAll('.wan-nearby-item').forEach((btn) => {
@@ -1437,13 +1461,34 @@ export class WanApp {
 
         <div class="wan-inspector-body">
           <div class="wan-prop-group">
-            <div class="wan-prop-row">
+            <div class="wan-prop-row wan-prop-row-align">
               <span>Đơn vị vận hành:</span>
-              <strong>${CATEGORY_LABELS[e.category] || e.category}</strong>
+              ${
+                isAuthed
+                  ? `
+                <select id="edit-e-category" class="wan-select-inline" title="Nhấp để thay đổi phân loại tuyến cáp">
+                  ${Object.entries(CATEGORY_LABELS)
+                    .filter(([cat]) => cat.startsWith('cable-'))
+                    .map(([cat, label]) => `<option value="${cat}" ${e.category === cat ? 'selected' : ''}>${label}</option>`)
+                    .join('')}
+                </select>
+              `
+                  : `<strong>${CATEGORY_LABELS[e.category] || e.category}</strong>`
+              }
             </div>
-            <div class="wan-prop-row">
+            <div class="wan-prop-row wan-prop-row-align">
               <span>Khu vực:</span>
-              <strong>${REGION_LABELS[e.region]}</strong>
+              ${
+                isAuthed
+                  ? `
+                <select id="edit-e-region" class="wan-select-inline" title="Nhấp để thay đổi khu vực địa lý">
+                  ${Object.entries(REGION_LABELS)
+                    .map(([reg, label]) => `<option value="${reg}" ${e.region === reg ? 'selected' : ''}>${label}</option>`)
+                    .join('')}
+                </select>
+              `
+                  : `<strong>${REGION_LABELS[e.region]}</strong>`
+              }
             </div>
             <div class="wan-prop-row">
               <span>Điểm đầu:</span>
@@ -1467,23 +1512,6 @@ export class WanApp {
               <label class="wan-field">
                 <span>Nhãn dung lượng / Tuyến cáp</span>
                 <input id="edit-e-text" type="text" value="${e.labelPlainText.replace(/"/g, '&quot;')}" />
-              </label>
-              <label class="wan-field">
-                <span>Phân loại tuyến cáp</span>
-                <select id="edit-e-category" class="wan-select">
-                  ${Object.entries(CATEGORY_LABELS)
-                    .filter(([cat]) => cat.startsWith('cable-'))
-                    .map(([cat, label]) => `<option value="${cat}" ${e.category === cat ? 'selected' : ''}>${label}</option>`)
-                    .join('')}
-                </select>
-              </label>
-              <label class="wan-field">
-                <span>Khu vực</span>
-                <select id="edit-e-region" class="wan-select">
-                  ${Object.entries(REGION_LABELS)
-                    .map(([reg, label]) => `<option value="${reg}" ${e.region === reg ? 'selected' : ''}>${label}</option>`)
-                    .join('')}
-                </select>
               </label>
               <div class="wan-field-row">
                 <label class="wan-field">
@@ -1530,6 +1558,7 @@ export class WanApp {
       });
       inspector.querySelector('#btn-reset-edge-edit')?.addEventListener('click', () => {
         this.resetCustomEdit(e.id);
+        this.showToast(`Đã khôi phục thông tin gốc của tuyến cáp #${e.id}!`);
       });
       inspector.querySelector('#btn-apply-edge-edit')?.addEventListener('click', () => {
         const newText = (inspector.querySelector('#edit-e-text')                    ).value.trim();
@@ -1576,6 +1605,7 @@ export class WanApp {
         this.updateViewportTransform();
         this.renderInspector();
         this.renderSidebarContent();
+        this.showToast(`Đã lưu Phân loại, Khu vực và Nhãn tuyến cáp #${e.id} thành công!`);
       });
     }
   }
