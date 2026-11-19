@@ -50,7 +50,7 @@ const MIME_TYPES: Record<string, string> = {
 };
 
 function parseTimeValue(timeStr: string): number {
-  if (!timeStr) return Number.MAX_SAFE_INTEGER;
+  if (!timeStr) return -1;
   const s = String(timeStr).trim();
 
   // Pattern 1: DD/MM/YYYY or DD-MM-YYYY, with optional HH:mm[:ss]
@@ -82,15 +82,15 @@ function parseTimeValue(timeStr: string): number {
   const parsed = Date.parse(s);
   if (!isNaN(parsed)) return parsed;
 
-  return Number.MAX_SAFE_INTEGER;
+  return -1;
 }
 
-function sortItemsAscending(items: any[]): any[] {
+function sortItemsDescending(items: any[]): any[] {
   if (!Array.isArray(items)) return [];
   return [...items].sort((a, b) => {
-    const diff = parseTimeValue(a.time) - parseTimeValue(b.time);
+    const diff = parseTimeValue(b.time) - parseTimeValue(a.time);
     if (diff !== 0) return diff;
-    return String(a.time || '').localeCompare(String(b.time || ''));
+    return String(b.time || '').localeCompare(String(a.time || ''));
   });
 }
 
@@ -98,7 +98,7 @@ function readBaocaoJson(): any[] {
   try {
     if (fs.existsSync(DATA_FILE)) {
       const parsed = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
-      return sortItemsAscending(parsed);
+      return sortItemsDescending(parsed);
     }
   } catch {}
   return [];
@@ -106,7 +106,7 @@ function readBaocaoJson(): any[] {
 
 function saveBaocaoAndSyncXlsx(items: any[], callback?: () => void) {
   try {
-    const sorted = sortItemsAscending(items);
+    const sorted = sortItemsDescending(items);
     fs.mkdirSync(path.dirname(DATA_FILE), { recursive: true });
     fs.writeFileSync(DATA_FILE, JSON.stringify(sorted, null, 2), 'utf-8');
     execFile(

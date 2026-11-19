@@ -1,7 +1,7 @@
 import { verifyServerToken } from './auth.js';
 
 function parseTimeValue(timeStr) {
-  if (!timeStr) return Number.MAX_SAFE_INTEGER;
+  if (!timeStr) return -1;
   const s = String(timeStr).trim();
 
   // Pattern 1: DD/MM/YYYY or DD-MM-YYYY, with optional HH:mm[:ss]
@@ -33,15 +33,15 @@ function parseTimeValue(timeStr) {
   const parsed = Date.parse(s);
   if (!isNaN(parsed)) return parsed;
 
-  return Number.MAX_SAFE_INTEGER;
+  return -1;
 }
 
-function sortItemsAscending(items) {
+function sortItemsDescending(items) {
   if (!Array.isArray(items)) return [];
   return [...items].sort((a, b) => {
-    const diff = parseTimeValue(a.time) - parseTimeValue(b.time);
+    const diff = parseTimeValue(b.time) - parseTimeValue(a.time);
     if (diff !== 0) return diff;
-    return String(a.time || '').localeCompare(String(b.time || ''));
+    return String(b.time || '').localeCompare(String(a.time || ''));
   });
 }
 
@@ -60,9 +60,9 @@ export default function handler(req, res) {
     return res.status(200).end();
   }
 
-  // GET: Xem báo cáo (Công khai cho người xem nội bộ) - luôn sắp xếp thời gian sớm hơn lên trên
+  // GET: Xem báo cáo - luôn sắp xếp thời gian mới nhất (trễ nhất) lên trên cùng
   if (req.method === 'GET') {
-    return res.status(200).json(sortItemsAscending(inMemoryItems));
+    return res.status(200).json(sortItemsDescending(inMemoryItems));
   }
 
   // MỌI THAO TÁC THAY ĐỔI (POST, DELETE) BẮT BUỘC PHẢI CÓ TOKEN XÁC THỰC PHÍA SERVER
@@ -85,7 +85,7 @@ export default function handler(req, res) {
       return res.status(400).json({ error: 'Dữ liệu vượt quá dung lượng tối đa cho phép.' });
     }
 
-    inMemoryItems = sortItemsAscending(items);
+    inMemoryItems = sortItemsDescending(items);
 
     // Ghi nhật ký kiểm toán (Audit Trail)
     auditTrail.push({
@@ -109,7 +109,7 @@ export default function handler(req, res) {
         timestamp: new Date().toISOString(),
       });
     }
-    return res.status(200).json({ success: true, message: 'Đã xóa hàng trong baocao.xlsx', items: sortItemsAscending(inMemoryItems) });
+    return res.status(200).json({ success: true, message: 'Đã xóa hàng trong baocao.xlsx', items: sortItemsDescending(inMemoryItems) });
   }
 
   return res.status(405).json({ error: 'Method not allowed' });

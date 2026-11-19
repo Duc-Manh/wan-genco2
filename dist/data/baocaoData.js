@@ -6,7 +6,7 @@
  
 
 export function parseTimeValue(timeStr        )         {
-  if (!timeStr) return Number.MAX_SAFE_INTEGER;
+  if (!timeStr) return -1;
   const s = String(timeStr).trim();
 
   // Pattern 1: DD/MM/YYYY or DD-MM-YYYY, with optional HH:mm[:ss]
@@ -38,7 +38,7 @@ export function parseTimeValue(timeStr        )         {
   const parsed = Date.parse(s);
   if (!isNaN(parsed)) return parsed;
 
-  return Number.MAX_SAFE_INTEGER;
+  return -1;
 }
 
 export const INITIAL_BAOCAO_ITEMS               = [];
@@ -55,7 +55,7 @@ export class BaocaoStore {
           // Lọc bỏ các hàng nội dung mẫu cũ nếu còn lưu trong cache trình duyệt
           const sampleIds = new Set(['bc-1', 'bc-2', 'bc-3', 'bc-4', 'bc-5']);
           const filtered = parsed.filter((item            ) => !sampleIds.has(item.id));
-          return this.sortAsc(filtered);
+          return this.sortDesc(filtered);
         }
       }
     } catch {
@@ -66,7 +66,7 @@ export class BaocaoStore {
 
          static saveItems(items              )       {
     try {
-      const sorted = this.sortAsc(items);
+      const sorted = this.sortDesc(items);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(sorted));
     } catch {
       // Ignore quota error
@@ -82,7 +82,7 @@ export class BaocaoStore {
       status: item.status.trim() || 'Đang thực hiện',
     };
     items.push(newItem);
-    const sorted = this.sortAsc(items);
+    const sorted = this.sortDesc(items);
     this.saveItems(sorted);
     return newItem;
   }
@@ -95,7 +95,7 @@ export class BaocaoStore {
       ...items[idx],
       ...updated,
     };
-    const sorted = this.sortAsc(items);
+    const sorted = this.sortDesc(items);
     this.saveItems(sorted);
     return true;
   }
@@ -111,17 +111,21 @@ export class BaocaoStore {
     return false;
   }
 
-  // Sắp xếp thời gian sớm hơn xếp trên, trễ hơn xếp dưới (tăng dần theo thời gian)
+  // Sắp xếp thời gian mới nhất (trễ nhất) lên trên cùng, thời gian cũ hơn xếp dưới
+         static sortDesc(items              )               {
+    return [...items].sort((a, b) => {
+      const diff = parseTimeValue(b.time) - parseTimeValue(a.time);
+      if (diff !== 0) return diff;
+      return (b.time || '').localeCompare(a.time || '');
+    });
+  }
+
          static sortAsc(items              )               {
     return [...items].sort((a, b) => {
       const diff = parseTimeValue(a.time) - parseTimeValue(b.time);
       if (diff !== 0) return diff;
       return (a.time || '').localeCompare(b.time || '');
     });
-  }
-
-         static sortDesc(items              )               {
-    return this.sortAsc(items);
   }
 }
 
