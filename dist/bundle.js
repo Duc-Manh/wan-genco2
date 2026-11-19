@@ -1957,9 +1957,7 @@ class DeploymentModal {
     const y = now.getFullYear();
     const m = String(now.getMonth() + 1).padStart(2, '0');
     const d = String(now.getDate()).padStart(2, '0');
-    const hh = String(now.getHours()).padStart(2, '0');
-    const mm = String(now.getMinutes()).padStart(2, '0');
-    return `${y}-${m}-${d} ${hh}:${mm}`;
+    return `${d}/${m}/${y}`;
   }
 
           render()       {
@@ -1977,7 +1975,7 @@ class DeploymentModal {
         <tr class="wan-deploy-row-edit adding-new">
           <td class="wan-dp-col-stt">Mới</td>
           <td class="wan-dp-col-time">
-            <input id="input-new-time" type="text" class="wan-dp-input" value="${defaultTime}" placeholder="YYYY-MM-DD HH:mm" />
+            <input id="input-new-time" type="text" class="wan-dp-input" value="${defaultTime}" placeholder="dd/mm/yyyy" />
           </td>
           <td class="wan-dp-col-content">
             <input id="input-new-content" type="text" class="wan-dp-input" placeholder="Nhập nội dung triển khai thực tế..." autofocus />
@@ -2013,7 +2011,7 @@ class DeploymentModal {
             <tr class="wan-deploy-row-edit" data-id="${item.id}">
               <td class="wan-dp-col-stt">${idx + 1}</td>
               <td class="wan-dp-col-time">
-                <input id="edit-time-${item.id}" type="text" class="wan-dp-input" value="${escapeHtml(item.time)}" placeholder="YYYY-MM-DD HH:mm" />
+                <input id="edit-time-${item.id}" type="text" class="wan-dp-input" value="${escapeHtml(item.time)}" placeholder="dd/mm/yyyy" />
               </td>
               <td class="wan-dp-col-content">
                 <input id="edit-content-${item.id}" type="text" class="wan-dp-input" value="${escapeHtml(item.content)}" />
