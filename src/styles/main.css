@@ -399,30 +399,127 @@ body,
 }
 
 .wan-project-tab:hover {
-  background: #f1f5f9;
-  color: #0f172a;
-  border-color: #94a3b8;
+  opacity: 1;
+}
+
+.wan-project-tab:not(.active) {
+  opacity: 0.82;
 }
 
 .wan-project-tab.active {
-  background: #1e3a8a;
-  color: #ffffff;
-  border-color: #1e3a8a;
-  box-shadow: 0 1px 3px rgba(30, 58, 138, 0.35);
+  opacity: 1;
+  font-weight: 800;
 }
 
 .wan-project-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #94a3b8;
+  background: #ffffff;
   display: inline-block;
   transition: all 0.15s ease;
+  opacity: 0.8;
 }
 
 .wan-project-tab.active .wan-project-dot {
-  background: #38bdf8;
-  box-shadow: 0 0 6px #38bdf8;
+  opacity: 1;
+  box-shadow: 0 0 6px #ffffff;
+}
+
+/* 1. Nhóm Dự án WAN - Màu xanh lục (Green) */
+.wan-project-tab[data-project="wan"] {
+  background: #16a34a !important;
+  color: #ffffff !important;
+  border-color: #15803d !important;
+}
+.wan-project-tab[data-project="wan"]:hover {
+  background: #15803d !important;
+  border-color: #14532d !important;
+}
+.wan-project-tab[data-project="wan"].active {
+  background: #15803d !important;
+  border-color: #14532d !important;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85), 0 2px 5px rgba(22, 163, 74, 0.45);
+}
+
+#pane-project-wan .wan-subnav-item {
+  background: #16a34a !important;
+  color: #ffffff !important;
+  border-color: #15803d !important;
+  font-weight: 700;
+}
+#pane-project-wan .wan-subnav-item:hover {
+  background: #15803d !important;
+  border-color: #14532d !important;
+}
+#pane-project-wan .wan-subnav-item.active {
+  background: #14532d !important;
+  border-color: #052e16 !important;
+  box-shadow: 0 1px 4px rgba(21, 128, 61, 0.5);
+}
+
+/* 2. Nhóm Dự án An toàn an ninh thông tin - Màu cam (Orange) */
+.wan-project-tab[data-project="atantt"] {
+  background: #ea580c !important;
+  color: #ffffff !important;
+  border-color: #c2410c !important;
+}
+.wan-project-tab[data-project="atantt"]:hover {
+  background: #c2410c !important;
+  border-color: #9a3412 !important;
+}
+.wan-project-tab[data-project="atantt"].active {
+  background: #c2410c !important;
+  border-color: #9a3412 !important;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85), 0 2px 5px rgba(234, 88, 12, 0.45);
+}
+
+#pane-project-atantt .wan-subnav-item {
+  background: #ea580c !important;
+  color: #ffffff !important;
+  border-color: #c2410c !important;
+  font-weight: 700;
+}
+#pane-project-atantt .wan-subnav-item:hover {
+  background: #c2410c !important;
+  border-color: #9a3412 !important;
+}
+#pane-project-atantt .wan-subnav-item.active {
+  background: #9a3412 !important;
+  border-color: #7c2d12 !important;
+  box-shadow: 0 1px 4px rgba(194, 65, 12, 0.5);
+}
+
+/* 3. Nhóm Dự án Trung tâm RMCC - Màu xanh dương (Blue) */
+.wan-project-tab[data-project="rmcc"] {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  border-color: #1d4ed8 !important;
+}
+.wan-project-tab[data-project="rmcc"]:hover {
+  background: #1d4ed8 !important;
+  border-color: #1e40af !important;
+}
+.wan-project-tab[data-project="rmcc"].active {
+  background: #1d4ed8 !important;
+  border-color: #1e40af !important;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85), 0 2px 5px rgba(37, 99, 235, 0.45);
+}
+
+#pane-project-rmcc .wan-subnav-item {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  border-color: #1d4ed8 !important;
+  font-weight: 700;
+}
+#pane-project-rmcc .wan-subnav-item:hover {
+  background: #1d4ed8 !important;
+  border-color: #1e40af !important;
+}
+#pane-project-rmcc .wan-subnav-item.active {
+  background: #1e40af !important;
+  border-color: #172554 !important;
+  box-shadow: 0 1px 4px rgba(29, 78, 216, 0.5);
 }
 
 .wan-project-pane {
