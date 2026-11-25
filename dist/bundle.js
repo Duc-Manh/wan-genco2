@@ -2100,11 +2100,23 @@ class BangThongModal {
 
 // --- src/ui/authWidget.ts ---
 const AUTH_STORAGE_KEY = 'wan_admin_session_v3';
+const UNIT_CREDENTIALS                         = {
+  'Tổng công ty Phát điện 2': '@2026!EVNGENCO2-1',
+  'Ban Quản lý dự án EVNGENCO2': '@2026!EVNGENCO2-2',
+  'Công ty CP Thuỷ điện Thác Mơ': '@2026!EVNGENCO2-3',
+  'Công ty CP Thuỷ điện A Vương': '@2026!EVNGENCO2-4',
+  'Công ty CP Thuỷ điện Sông Ba Hạ': '@2026!EVNGENCO2-5',
+  'Công ty CP NĐ Phả Lại': '@2026!EVNGENCO2-6',
+  'Công ty CP NĐ Hải Phòng': '@2026!EVNGENCO2-7',
+  'Công ty TNHH MTV Thuỷ điện Trung Sơn': '@2026!EVNGENCO2-8',
+};
 class AuthManager {
           static failedAttempts = 0;
           static lockedUntil = 0;
           static          MAX_ATTEMPTS = 3;
           static          LOCKOUT_TIME_MS = 5 * 60 * 1000; // 5 phút
+          static          LOCKOUT_KEY = 'wan_auth_lockout_until';
+          static          ATTEMPTS_KEY = 'wan_auth_failed_attempts';
 
          static isAuthenticated()          {
     try {
@@ -2136,17 +2148,49 @@ class AuthManager {
     return null;
   }
 
+         static getToken()                {
+    return this.getAuthToken();
+  }
+
+         static getLoggedInUnit()         {
+    try {
+      const raw = sessionStorage.getItem(AUTH_STORAGE_KEY) || localStorage.getItem(AUTH_STORAGE_KEY);
+      if (!raw) return 'EVNGENCO2';
+      const session              = JSON.parse(raw);
+      return session?.unitName || session?.unit || 'EVNGENCO2';
+    } catch {
+      return 'EVNGENCO2';
+    }
+  }
+
          static getRemainingLockoutSeconds()         {
-    if (Date.now() < this.lockedUntil) {
-      return Math.ceil((this.lockedUntil - Date.now()) / 1000);
+    let until = this.lockedUntil;
+    try {
+      const stored = Number(localStorage.getItem(this.LOCKOUT_KEY) || 0);
+      if (stored > until) until = stored;
+    } catch {}
+    if (Date.now() < until) {
+      return Math.ceil((until - Date.now()) / 1000);
     }
     return 0;
   }
 
-         static async login(code        )                                                {
-    const trimmed = code.trim();
-    if (!trimmed) {
-      return { success: false, error: 'Vui lòng nhập mã xác thực!' };
+         static async login(
+    unitOrCode        ,
+    maybePassword         
+  )                                                                                                                    {
+    let unit = '';
+    let password = '';
+
+    if (maybePassword !== undefined) {
+      unit = unitOrCode.trim();
+      password = maybePassword.trim();
+    } else {
+      password = unitOrCode.trim();
+    }
+
+    if (!password) {
+      return { success: false, error: 'Vui lòng nhập mật khẩu truy cập!' };
     }
 
     // Kiểm tra giới hạn khóa do nhập sai quá 3 lần (khóa 5 phút)
@@ -2155,16 +2199,18 @@ class AuthManager {
       const waitMin = Math.ceil(waitSec / 60);
       return {
         success: false,
+        locked: true,
+        waitSeconds: waitSec,
         error: `Tài khoản tạm khóa do nhập sai quá 3 lần liên tiếp. Vui lòng thử lại sau ${waitSec} giây (~${waitMin} phút).`,
       };
     }
 
-    // Xác thực an toàn duy nhất qua Server API /api/auth
+    // Xác thực an toàn qua Server API /api/auth
     try {
       const res = await fetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: trimmed }),
+        body: JSON.stringify({ unit, password, code: password }),
       });
 
       const data = await res.json();
@@ -2173,47 +2219,129 @@ class AuthManager {
         this.saveSession({
           token: data.token,
           expiresAt: data.expiresAt || Date.now() + 8 * 3600 * 1000,
+          unit: data.unit || unit,
+          unitName: data.unit || unit,
         });
-        this.failedAttempts = 0;
-        this.lockedUntil = 0;
+        this.clearFailedAttempts();
         window.dispatchEvent(new CustomEvent('wan:auth-changed', { detail: { isAuthenticated: true } }));
         return { success: true };
       }
 
       if (res.status === 429) {
         const sec = data.waitSeconds || 300;
-        this.lockedUntil = Date.now() + sec * 1000;
+        this.setLockout(sec);
         return {
           success: false,
+          locked: true,
+          waitSeconds: sec,
+          remainingAttempts: 0,
           error: data.error || `Bạn đã nhập sai 3 lần liên tiếp. Hệ thống khóa đăng nhập trong 5 phút.`,
         };
       }
 
       if (res.status === 401) {
-        this.recordFailedAttempt();
+        const rec = this.recordFailedAttempt();
         return {
           success: false,
-          error: data.error || 'Mã xác thực không chính xác!',
+          remainingAttempts: data.remainingAttempts !== undefined ? data.remainingAttempts : rec.remainingAttempts,
+          locked: rec.locked,
+          waitSeconds: rec.waitSeconds,
+          error: data.error || (unit ? `Mật khẩu không chính xác cho ${unit}!` : 'Mật khẩu xác thực không chính xác!'),
         };
       }
 
       return {
         success: false,
-        error: data.error || 'Lỗi kiểm tra mã xác thực từ máy chủ!',
+        error: data.error || 'Lỗi kiểm tra mật khẩu từ máy chủ!',
       };
     } catch {
+      // Fallback cục bộ khi không có mạng/server
+      const expected = unit ? UNIT_CREDENTIALS[unit] : undefined;
+      let isMatch = false;
+      let matchedUnit = unit;
+
+      if (expected && expected === password) {
+        isMatch = true;
+      } else if (!unit) {
+        for (const [uName, uPass] of Object.entries(UNIT_CREDENTIALS)) {
+          if (uPass === password) {
+            isMatch = true;
+            matchedUnit = uName;
+            break;
+          }
+        }
+      }
+
+      if (isMatch) {
+        this.saveSession({
+          token: `local_session_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+          expiresAt: Date.now() + 8 * 3600 * 1000,
+          unit: matchedUnit,
+          unitName: matchedUnit,
+        });
+        this.clearFailedAttempts();
+        window.dispatchEvent(new CustomEvent('wan:auth-changed', { detail: { isAuthenticated: true } }));
+        return { success: true };
+      }
+
+      const rec = this.recordFailedAttempt();
+      if (rec.locked) {
+        return {
+          success: false,
+          locked: true,
+          waitSeconds: rec.waitSeconds,
+          remainingAttempts: 0,
+          error: 'Bạn đã nhập mật khẩu sai 3 lần liên tiếp. Hệ thống tạm khóa đăng nhập trong 5 phút.',
+        };
+      }
       return {
         success: false,
-        error: 'Không thể kết nối đến máy chủ xác thực. Vui lòng kiểm tra lại kết nối mạng!',
+        remainingAttempts: rec.remainingAttempts,
+        error: unit
+          ? `Mật khẩu không chính xác cho ${unit}! (Còn ${rec.remainingAttempts} lần thử trước khi bị khóa 5 phút)`
+          : `Mật khẩu xác thực không chính xác! (Còn ${rec.remainingAttempts} lần thử trước khi bị khóa 5 phút)`,
       };
     }
   }
 
-          static recordFailedAttempt()       {
-    this.failedAttempts++;
-    if (this.failedAttempts >= this.MAX_ATTEMPTS) {
-      this.lockedUntil = Date.now() + this.LOCKOUT_TIME_MS; // Khóa 5 phút
+          static setLockout(waitSeconds        )       {
+    const until = Date.now() + waitSeconds * 1000;
+    this.lockedUntil = until;
+    try {
+      localStorage.setItem(this.LOCKOUT_KEY, String(until));
+    } catch {}
+  }
+
+          static recordFailedAttempt()                                                                      {
+    let attempts = 0;
+    try {
+      attempts = Number(localStorage.getItem(this.ATTEMPTS_KEY) || 0);
+    } catch {}
+    attempts++;
+    this.failedAttempts = attempts;
+    try {
+      localStorage.setItem(this.ATTEMPTS_KEY, String(attempts));
+    } catch {}
+
+    if (attempts >= this.MAX_ATTEMPTS) {
+      const until = Date.now() + this.LOCKOUT_TIME_MS;
+      this.lockedUntil = until;
+      try {
+        localStorage.setItem(this.LOCKOUT_KEY, String(until));
+      } catch {}
+      return { locked: true, waitSeconds: 300, remainingAttempts: 0 };
     }
+
+    return { locked: false, waitSeconds: 0, remainingAttempts: Math.max(0, this.MAX_ATTEMPTS - attempts) };
+  }
+
+          static clearFailedAttempts()       {
+    this.failedAttempts = 0;
+    this.lockedUntil = 0;
+    try {
+      localStorage.removeItem(this.LOCKOUT_KEY);
+      localStorage.removeItem(this.ATTEMPTS_KEY);
+    } catch {}
   }
 
           static saveSession(session             )       {
@@ -2299,7 +2427,7 @@ class AuthWidget {
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                   <polyline points="20 6 9 17 4 12"/>
                 </svg>
-                <span>Quyền: Quản trị viên</span>
+                <span>Đơn vị: ${AuthManager.getLoggedInUnit()}</span>
               </div>
               <p class="wan-auth-desc">Bạn có quyền nhập và chỉnh sửa dữ liệu tại bảng <strong>Triển khai thực tế</strong>.</p>
               <button id="btn-auth-logout" class="wan-btn-auth-action danger">Đăng xuất</button>
@@ -2369,6 +2497,7 @@ class AuthWidget {
         AuthManager.logout();
         this.isOpen = false;
         this.render();
+        window.dispatchEvent(new CustomEvent('wan:logout'));
         return;
       }
 
@@ -3355,6 +3484,25 @@ class WanApp {
               <button id="btn-export-png" class="wan-tool-btn" title="Tải xuống ảnh PNG độ phân giải cao">Xuất PNG</button>
               <button id="btn-export-excel" class="wan-tool-btn" title="Tải xuống file dữ liệu các phần tử infor.xlsx">Xuất Excel</button>
             </div>
+
+            <!-- User Session & Logout -->
+            <div class="wan-btn-group wan-header-session-group">
+              <span class="wan-header-user-badge" title="Đơn vị đã đăng nhập">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+                <span class="wan-header-user-name">${AuthManager.getLoggedInUnit()}</span>
+              </span>
+              <button id="btn-header-logout" class="wan-tool-btn wan-btn-logout" title="Đăng xuất khỏi hệ thống">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                  <polyline points="16 17 21 12 16 7"/>
+                  <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                <span>Đăng xuất</span>
+              </button>
+            </div>
           </div>
         </header>
 
@@ -3639,6 +3787,13 @@ class WanApp {
     });
 
     // Zoom và View buttons
+    this.container.querySelector('#btn-header-logout')?.addEventListener('click', () => {
+      if (confirm('Bạn có chắc chắn muốn đăng xuất khỏi hệ thống?')) {
+        AuthManager.logout();
+        window.dispatchEvent(new CustomEvent('wan:logout'));
+      }
+    });
+
     this.container.querySelector('#btn-zoom-in')?.addEventListener('click', () => {
       this.zoomByFactor(1.25);
     });
@@ -5049,7 +5204,396 @@ class WanApp {
 
 
 
+// --- src/ui/loginView.ts ---
+const LOGIN_UNITS = [
+  'Tổng công ty Phát điện 2',
+  'Ban Quản lý dự án EVNGENCO2',
+  'Công ty CP Thuỷ điện Thác Mơ',
+  'Công ty CP Thuỷ điện A Vương',
+  'Công ty CP Thuỷ điện Sông Ba Hạ',
+  'Công ty CP NĐ Phả Lại',
+  'Công ty CP NĐ Hải Phòng',
+  'Công ty TNHH MTV Thuỷ điện Trung Sơn',
+];
+class LoginView {
+          container             ;
+          onLoginSuccess            ;
+          countdownTimer                = null;
+          selectedUnit         = '';
+          isSubmitting          = false;
+
+  constructor(container             , onLoginSuccess            ) {
+    this.container = container;
+    this.onLoginSuccess = onLoginSuccess;
+  }
+
+         mount()       {
+    this.render();
+    this.bindEvents();
+    this.checkInitialLockout();
+  }
+
+         destroy()       {
+    this.stopCountdown();
+    this.container.innerHTML = '';
+  }
+
+          checkInitialLockout()       {
+    const sec = AuthManager.getRemainingLockoutSeconds();
+    if (sec > 0) {
+      this.startCountdown(sec);
+    }
+  }
+
+          stopCountdown()       {
+    if (this.countdownTimer) {
+      clearInterval(this.countdownTimer);
+      this.countdownTimer = null;
+    }
+  }
+
+          startCountdown(totalSeconds        )       {
+    this.stopCountdown();
+    let remaining = totalSeconds;
+
+    const updateUI = () => {
+      const msgBox = this.container.querySelector('#wan-login-message')                      ;
+      const submitBtn = this.container.querySelector('#wan-btn-login-submit')                            ;
+      const passInput = this.container.querySelector('#wan-login-password')                           ;
+      const selectUnit = this.container.querySelector('#wan-login-unit-select')                            ;
+
+      if (remaining <= 0) {
+        this.stopCountdown();
+        if (msgBox) {
+          msgBox.className = 'wan-login-message hidden';
+          msgBox.innerHTML = '';
+        }
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = `<span>Truy cập</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>`;
+        }
+        if (passInput) passInput.disabled = false;
+        if (selectUnit) selectUnit.disabled = false;
+        return;
+      }
+
+      const m = Math.floor(remaining / 60);
+      const s = remaining % 60;
+      const timeStr = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+
+      if (msgBox) {
+        msgBox.className = 'wan-login-message error locked';
+        msgBox.innerHTML = `
+          <div class="wan-login-locked-banner">
+            <svg class="wan-login-lock-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            <div>
+              <strong>Tài khoản tạm khóa do nhập sai quá 3 lần liên tiếp.</strong>
+              <div class="wan-lock-countdown">Vui lòng thử lại sau: <span class="wan-countdown-digits">${timeStr}</span></div>
+            </div>
+          </div>
+        `;
+      }
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<span>Tạm khóa (${timeStr})</span>`;
+      }
+      if (passInput) passInput.disabled = true;
+      if (selectUnit) selectUnit.disabled = true;
+
+      remaining--;
+    };
+
+    updateUI();
+    this.countdownTimer = window.setInterval(updateUI, 1000);
+  }
+
+          render()       {
+    const lockSec = AuthManager.getRemainingLockoutSeconds();
+    const isLocked = lockSec > 0;
+
+    this.container.innerHTML = `
+      <div class="wan-login-screen">
+        <div class="wan-login-bg-glow glow-1"></div>
+        <div class="wan-login-bg-glow glow-2"></div>
+        <div class="wan-login-grid-pattern"></div>
+
+        <div class="wan-login-card">
+          <!-- Logo & Brand Header -->
+          <div class="wan-login-brand">
+            <div class="wan-login-logo-wrap">
+              <img src="./assets/logo.png" alt="EVNGENCO2 Logo" class="wan-login-logo" />
+            </div>
+            <h1 class="wan-login-title">HỆ THỐNG GIÁM SÁT MẠNG TRUYỀN DẪN WAN</h1>
+            <div class="wan-login-subtitle">TỔNG CÔNG TY PHÁT ĐIỆN 2 - EVNGENCO2</div>
+            <div class="wan-login-badge-secure">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+              <span>Cổng đăng nhập xác thực tập trung</span>
+            </div>
+          </div>
+
+          <!-- Notification / Error Box -->
+          <div id="wan-login-message" class="wan-login-message ${isLocked ? 'error locked' : 'hidden'}"></div>
+
+          <!-- Login Form -->
+          <form class="wan-login-form" id="wan-login-form" onsubmit="return false;">
+            <!-- Dropdown Đơn vị -->
+            <div class="wan-login-form-group">
+              <label for="wan-login-unit-select" class="wan-login-label">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 21h18"/>
+                  <path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/>
+                  <path d="M9 9h1"/>
+                  <path d="M9 13h1"/>
+                  <path d="M9 17h1"/>
+                  <path d="M14 9h1"/>
+                  <path d="M14 13h1"/>
+                  <path d="M14 17h1"/>
+                </svg>
+                <span>Chọn Đơn vị:</span>
+              </label>
+              <div class="wan-login-select-wrapper">
+                <select id="wan-login-unit-select" class="wan-login-select" ${isLocked ? 'disabled' : ''}>
+                  <option value="" disabled selected>-- Chọn đơn vị truy cập --</option>
+                  ${LOGIN_UNITS.map(
+                    (u) => `<option value="${u}">${u}</option>`
+                  ).join('')}
+                </select>
+                <div class="wan-login-select-arrow">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <!-- Ô nhập Mật khẩu -->
+            <div class="wan-login-form-group">
+              <div class="wan-login-label-row">
+                <label for="wan-login-password" class="wan-login-label">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                  </svg>
+                  <span>Mật khẩu truy cập:</span>
+                </label>
+              </div>
+              <div class="wan-login-input-wrapper">
+                <input
+                  type="password"
+                  id="wan-login-password"
+                  class="wan-login-input"
+                  placeholder="Nhập mật khẩu tương ứng của đơn vị..."
+                  autocomplete="current-password"
+                  ${isLocked ? 'disabled' : ''}
+                />
+                <button
+                  type="button"
+                  id="wan-btn-toggle-password"
+                  class="wan-login-eye-btn"
+                  title="Hiện/Ẩn mật khẩu"
+                  tabindex="-1"
+                  ${isLocked ? 'disabled' : ''}
+                >
+                  <svg class="icon-eye" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  <svg class="icon-eye-off hidden" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Nút Truy cập -->
+            <button
+              type="submit"
+              id="wan-btn-login-submit"
+              class="wan-btn-login-submit"
+              ${isLocked ? 'disabled' : ''}
+            >
+              <span>Truy cập</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </button>
+          </form>
+
+          <!-- Footer Information -->
+          <div class="wan-login-footer">
+            <div class="wan-login-footer-text">
+              <span>Bảo mật hệ thống EVNGENCO2 &bull; Tự động khóa 5 phút nếu sai quá 3 lần</span>
+            </div>
+            <div class="wan-login-copyright">
+              &copy; 2026 Tổng công ty Phát điện 2 - Ban Quản lý dự án
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+          bindEvents()       {
+    const form = this.container.querySelector('#wan-login-form')                          ;
+    const submitBtn = this.container.querySelector('#wan-btn-login-submit')                            ;
+    const selectUnit = this.container.querySelector('#wan-login-unit-select')                            ;
+    const passInput = this.container.querySelector('#wan-login-password')                           ;
+    const toggleEye = this.container.querySelector('#wan-btn-toggle-password')                            ;
+
+    selectUnit?.addEventListener('change', () => {
+      this.selectedUnit = selectUnit.value;
+      passInput?.focus();
+    });
+
+    toggleEye?.addEventListener('click', () => {
+      if (!passInput) return;
+      const isPwd = passInput.type === 'password';
+      passInput.type = isPwd ? 'text' : 'password';
+      const eyeOn = toggleEye.querySelector('.icon-eye');
+      const eyeOff = toggleEye.querySelector('.icon-eye-off');
+      eyeOn?.classList.toggle('hidden', isPwd);
+      eyeOff?.classList.toggle('hidden', !isPwd);
+    });
+
+    form?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      this.handleLogin();
+    });
+
+    submitBtn?.addEventListener('click', (e) => {
+      e.preventDefault();
+      this.handleLogin();
+    });
+  }
+
+          async handleLogin()                {
+    if (this.isSubmitting) return;
+
+    const lockSec = AuthManager.getRemainingLockoutSeconds();
+    if (lockSec > 0) {
+      this.startCountdown(lockSec);
+      return;
+    }
+
+    const selectUnit = this.container.querySelector('#wan-login-unit-select')                            ;
+    const passInput = this.container.querySelector('#wan-login-password')                           ;
+    const msgBox = this.container.querySelector('#wan-login-message')                      ;
+    const submitBtn = this.container.querySelector('#wan-btn-login-submit')                            ;
+
+    const unit = selectUnit?.value?.trim() || '';
+    const pass = passInput?.value?.trim() || '';
+
+    // Kiểm tra đơn vị
+    if (!unit) {
+      if (msgBox) {
+        msgBox.className = 'wan-login-message error';
+        msgBox.innerHTML = `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span>Vui lòng chọn <strong>Đơn vị</strong> trong danh sách trước khi truy cập.</span>
+        `;
+      }
+      selectUnit?.focus();
+      return;
+    }
+
+    // Kiểm tra password
+    if (!pass) {
+      if (msgBox) {
+        msgBox.className = 'wan-login-message error';
+        msgBox.innerHTML = `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span>Vui lòng nhập <strong>mật khẩu tương ứng</strong> của ${unit}.</span>
+        `;
+      }
+      passInput?.focus();
+      return;
+    }
+
+    this.isSubmitting = true;
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `
+        <svg class="wan-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="12" cy="12" r="10" stroke-opacity="0.25"/>
+          <path d="M12 2a10 10 0 0 1 10 10"/>
+        </svg>
+        <span>Đang kiểm tra...</span>
+      `;
+    }
+
+    try {
+      const res = await AuthManager.login(unit, pass);
+
+      if (res.success) {
+        this.stopCountdown();
+        if (msgBox) {
+          msgBox.className = 'wan-login-message success';
+          msgBox.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Xác thực thành công! Đang truy cập hệ thống...</span>
+          `;
+        }
+        setTimeout(() => {
+          this.destroy();
+          this.onLoginSuccess();
+        }, 350);
+        return;
+      }
+
+      // Xử lý khi bị khóa hoặc sai mật khẩu
+      if (res.locked || res.waitSeconds) {
+        const sec = res.waitSeconds || 300;
+        this.startCountdown(sec);
+      } else {
+        if (msgBox) {
+          msgBox.className = 'wan-login-message error';
+          msgBox.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span>${res.error || `Mật khẩu không chính xác cho ${unit}!`}</span>
+          `;
+        }
+        if (passInput) {
+          passInput.classList.add('error');
+          passInput.focus();
+          passInput.select();
+        }
+      }
+    } finally {
+      this.isSubmitting = false;
+      const curLockSec = AuthManager.getRemainingLockoutSeconds();
+      if (curLockSec === 0 && submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<span>Truy cập</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>`;
+      }
+    }
+  }
+}
+
+
 // --- src/main.ts ---
+
+
+
+function renderApp(root             )       {
+  root.innerHTML = '';
+  const app = new WanApp(root);
+  app.mount();
+}
+
+function renderLogin(root             )       {
+  root.innerHTML = '';
+  const login = new LoginView(root, () => {
+    renderApp(root);
+  });
+  login.mount();
+}
 
 function bootstrap()       {
   const root = document.getElementById('app');
@@ -5057,9 +5601,18 @@ function bootstrap()       {
     throw new Error('Không tìm thấy phần tử #app để khởi tạo giao diện WAN.');
   }
 
-  root.innerHTML = '';
-  const app = new WanApp(root);
-  app.mount();
+  // Lắng nghe sự kiện đăng xuất từ toàn bộ ứng dụng
+  window.addEventListener('wan:logout', () => {
+    AuthManager.logout();
+    renderLogin(root);
+  });
+
+  // Kiểm tra phiên đăng nhập đã có hay chưa
+  if (AuthManager.isAuthenticated()) {
+    renderApp(root);
+  } else {
+    renderLogin(root);
+  }
 }
 
 if (document.readyState === 'loading') {

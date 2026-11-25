@@ -13,6 +13,18 @@ const INFOR_DATA_FILE = path.join(ROOT_DIR, 'data', 'infor.json');
 const ADMIN_HASH = process.env.WAN_ADMIN_HASH || '45b8778b307f91d4e32dd17b51b02f4b95ff5b7c10e66485b6275cdf294d3105';
 const SERVER_SECRET = process.env.WAN_SERVER_SECRET || 'evngenco2-wan-sec-2026-auth-sig';
 
+// Danh sách mật khẩu xác thực 8 đơn vị EVNGENCO2
+const UNIT_PASSWORDS: Record<string, string> = {
+  'Tổng công ty Phát điện 2': '@2026!EVNGENCO2-1',
+  'Ban Quản lý dự án EVNGENCO2': '@2026!EVNGENCO2-2',
+  'Công ty CP Thuỷ điện Thác Mơ': '@2026!EVNGENCO2-3',
+  'Công ty CP Thuỷ điện A Vương': '@2026!EVNGENCO2-4',
+  'Công ty CP Thuỷ điện Sông Ba Hạ': '@2026!EVNGENCO2-5',
+  'Công ty CP NĐ Phả Lại': '@2026!EVNGENCO2-6',
+  'Công ty CP NĐ Hải Phòng': '@2026!EVNGENCO2-7',
+  'Công ty TNHH MTV Thuỷ điện Trung Sơn': '@2026!EVNGENCO2-8',
+};
+
 // Brute-force protection
 const attemptTracker = new Map();
 const MAX_ATTEMPTS = 3;
@@ -187,18 +199,57 @@ const server = http.createServer((req, res) => {
             return;
           }
 
-          const { code } = JSON.parse(body || '{}');
-          const inputHash = crypto.createHash('sha256').update(String(code || '').trim()).digest('hex');
+          const { unit, password, code } = JSON.parse(body || '{}');
+          const inputPass = String(password || code || '').trim();
+          if (!inputPass) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Mật khẩu xác thực không được để trống.' }));
+            return;
+          }
 
-          if (inputHash.length === ADMIN_HASH.length && crypto.timingSafeEqual(Buffer.from(inputHash), Buffer.from(ADMIN_HASH))) {
+          let isValid = false;
+          let loggedInUnit = unit || '';
+
+          // So sánh mật khẩu bảo vệ Timing Attack
+          if (unit && UNIT_PASSWORDS[unit]) {
+            const expected = UNIT_PASSWORDS[unit];
+            const expHash = crypto.createHash('sha256').update(expected).digest('hex');
+            const inHash = crypto.createHash('sha256').update(inputPass).digest('hex');
+            isValid = crypto.timingSafeEqual(Buffer.from(inHash), Buffer.from(expHash));
+          } else if (!unit) {
+            for (const [uName, uPass] of Object.entries(UNIT_PASSWORDS)) {
+              const expHash = crypto.createHash('sha256').update(uPass).digest('hex');
+              const inHash = crypto.createHash('sha256').update(inputPass).digest('hex');
+              if (crypto.timingSafeEqual(Buffer.from(inHash), Buffer.from(expHash))) {
+                isValid = true;
+                loggedInUnit = uName;
+                break;
+              }
+            }
+            if (!isValid) {
+              const inHash = crypto.createHash('sha256').update(inputPass).digest('hex');
+              if (inHash.length === ADMIN_HASH.length && crypto.timingSafeEqual(Buffer.from(inHash), Buffer.from(ADMIN_HASH))) {
+                isValid = true;
+                loggedInUnit = 'Quản trị viên EVNGENCO2';
+              }
+            }
+          }
+
+          if (isValid) {
             attemptTracker.delete(clientIp);
             const expiresAt = Date.now() + 8 * 3600 * 1000;
-            const payloadB64 = Buffer.from(JSON.stringify({ role: 'admin', ip: clientIp, loginTime: Date.now() })).toString('base64url');
+            const payloadB64 = Buffer.from(JSON.stringify({ role: 'user', unit: loggedInUnit, ip: clientIp, loginTime: Date.now() })).toString('base64url');
             const sig = crypto.createHmac('sha256', SERVER_SECRET).update(`${payloadB64}.${expiresAt}`).digest('hex');
             const token = `${payloadB64}.${expiresAt}.${sig}`;
 
             res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ success: true, token, expiresAt, message: 'Xác thực thành công quyền Quản trị viên' }));
+            res.end(JSON.stringify({
+              success: true,
+              token,
+              expiresAt,
+              unit: loggedInUnit,
+              message: `Xác thực thành công: ${loggedInUnit}`,
+            }));
           } else {
             tracker.count = (tracker.count || 0) + 1;
             if (tracker.count >= MAX_ATTEMPTS) {
@@ -209,7 +260,7 @@ const server = http.createServer((req, res) => {
             if (remaining === 0) {
               res.writeHead(429, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({
-                error: 'Bạn đã nhập mã xác thực sai 3 lần liên tiếp. Hệ thống tạm khóa đăng nhập trong 5 phút để bảo vệ tài khoản.',
+                error: 'Bạn đã nhập mật khẩu sai 3 lần liên tiếp. Hệ thống tạm khóa đăng nhập trong 5 phút để bảo vệ tài khoản.',
                 locked: true,
                 remainingAttempts: 0,
                 waitSeconds: 300,
@@ -217,7 +268,9 @@ const server = http.createServer((req, res) => {
             } else {
               res.writeHead(401, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({
-                error: `Mã xác thực không chính xác! (Còn ${remaining} lần thử trước khi bị khóa 5 phút)`,
+                error: unit
+                  ? `Mật khẩu không chính xác cho ${unit}! (Còn ${remaining} lần thử trước khi bị khóa 5 phút)`
+                  : `Mật khẩu xác thực không chính xác! (Còn ${remaining} lần thử trước khi bị khóa 5 phút)`,
                 remainingAttempts: remaining,
               }));
             }

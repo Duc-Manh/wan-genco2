@@ -46,6 +46,7 @@ function buildStandaloneBundle(): void {
     'src/ui/authWidget.ts',
     'src/ui/deploymentModal.ts',
     'src/ui/app.ts',
+    'src/ui/loginView.ts',
     'src/main.ts',
   ];
 

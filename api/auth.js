@@ -10,6 +10,18 @@ const attemptTracker = new Map();
 const ADMIN_HASH = process.env.WAN_ADMIN_HASH || '45b8778b307f91d4e32dd17b51b02f4b95ff5b7c10e66485b6275cdf294d3105';
 const SERVER_SECRET = process.env.WAN_SERVER_SECRET || 'evngenco2-wan-sec-2026-auth-sig';
 
+// Danh sách mật khẩu xác thực 8 đơn vị EVNGENCO2
+export const UNIT_PASSWORDS = {
+  'Tổng công ty Phát điện 2': '@2026!EVNGENCO2-1',
+  'Ban Quản lý dự án EVNGENCO2': '@2026!EVNGENCO2-2',
+  'Công ty CP Thuỷ điện Thác Mơ': '@2026!EVNGENCO2-3',
+  'Công ty CP Thuỷ điện A Vương': '@2026!EVNGENCO2-4',
+  'Công ty CP Thuỷ điện Sông Ba Hạ': '@2026!EVNGENCO2-5',
+  'Công ty CP NĐ Phả Lại': '@2026!EVNGENCO2-6',
+  'Công ty CP NĐ Hải Phòng': '@2026!EVNGENCO2-7',
+  'Công ty TNHH MTV Thuỷ điện Trung Sơn': '@2026!EVNGENCO2-8',
+};
+
 export function checkAndSetCors(req, res) {
   const origin = req.headers.origin || '';
   const allowedOrigins = [
@@ -105,20 +117,46 @@ export default async function handler(req, res) {
       });
     }
 
-    const { code } = req.body || {};
-    if (!code || typeof code !== 'string') {
-      return res.status(400).json({ error: 'Mã xác thực không được để trống.' });
+    const { unit, password, code } = req.body || {};
+    const inputPass = String(password || code || '').trim();
+    if (!inputPass) {
+      return res.status(400).json({ error: 'Mật khẩu xác thực không được để trống.' });
     }
 
-    // 2. Băm mã nhập vào bằng SHA-256 và so sánh bảo vệ Timing Attack
-    const inputHash = crypto.createHash('sha256').update(code.trim()).digest('hex');
+    let isValid = false;
+    let loggedInUnit = unit || '';
 
-    if (inputHash.length === ADMIN_HASH.length && crypto.timingSafeEqual(Buffer.from(inputHash), Buffer.from(ADMIN_HASH))) {
+    // 2. So sánh mật khẩu bảo vệ Timing Attack
+    if (unit && UNIT_PASSWORDS[unit]) {
+      const expected = UNIT_PASSWORDS[unit];
+      const expHash = crypto.createHash('sha256').update(expected).digest('hex');
+      const inHash = crypto.createHash('sha256').update(inputPass).digest('hex');
+      isValid = crypto.timingSafeEqual(Buffer.from(inHash), Buffer.from(expHash));
+    } else if (!unit) {
+      for (const [uName, uPass] of Object.entries(UNIT_PASSWORDS)) {
+        const expHash = crypto.createHash('sha256').update(uPass).digest('hex');
+        const inHash = crypto.createHash('sha256').update(inputPass).digest('hex');
+        if (crypto.timingSafeEqual(Buffer.from(inHash), Buffer.from(expHash))) {
+          isValid = true;
+          loggedInUnit = uName;
+          break;
+        }
+      }
+      if (!isValid) {
+        const inHash = crypto.createHash('sha256').update(inputPass).digest('hex');
+        if (inHash.length === ADMIN_HASH.length && crypto.timingSafeEqual(Buffer.from(inHash), Buffer.from(ADMIN_HASH))) {
+          isValid = true;
+          loggedInUnit = 'Quản trị viên EVNGENCO2';
+        }
+      }
+    }
+
+    if (isValid) {
       // Đăng nhập đúng: reset toàn bộ bộ đếm sai
       await resetIpTracker(clientIp);
 
       const expiresAt = Date.now() + 8 * 60 * 60 * 1000; // Phiên 8 giờ
-      const payloadB64 = Buffer.from(JSON.stringify({ role: 'admin', ip: clientIp, loginTime: Date.now() })).toString('base64url');
+      const payloadB64 = Buffer.from(JSON.stringify({ role: 'user', unit: loggedInUnit, ip: clientIp, loginTime: Date.now() })).toString('base64url');
       const sig = crypto
         .createHmac('sha256', SERVER_SECRET)
         .update(`${payloadB64}.${expiresAt}`)
@@ -129,7 +167,8 @@ export default async function handler(req, res) {
         success: true,
         token,
         expiresAt,
-        message: 'Xác thực thành công quyền Quản trị viên',
+        unit: loggedInUnit,
+        message: `Xác thực thành công: ${loggedInUnit}`,
       });
     } else {
       // Đăng nhập sai: tăng bộ đếm và khóa 5 phút nếu sai quá 3 lần
@@ -142,7 +181,7 @@ export default async function handler(req, res) {
       const remaining = Math.max(0, MAX_ATTEMPTS - tracker.count);
       if (remaining === 0) {
         return res.status(429).json({
-          error: 'Bạn đã nhập mã xác thực sai 3 lần liên tiếp. Hệ thống tạm khóa đăng nhập trong 5 phút để bảo vệ tài khoản.',
+          error: 'Bạn đã nhập mật khẩu sai 3 lần liên tiếp. Hệ thống tạm khóa đăng nhập trong 5 phút để bảo vệ tài khoản.',
           locked: true,
           remainingAttempts: 0,
           waitSeconds: 300,
@@ -150,7 +189,9 @@ export default async function handler(req, res) {
       }
 
       return res.status(401).json({
-        error: `Mã xác thực không chính xác! (Còn ${remaining} lần thử trước khi bị khóa 5 phút)`,
+        error: unit
+          ? `Mật khẩu không chính xác cho ${unit}! (Còn ${remaining} lần thử trước khi bị khóa 5 phút)`
+          : `Mật khẩu xác thực không chính xác! (Còn ${remaining} lần thử trước khi bị khóa 5 phút)`,
         remainingAttempts: remaining,
       });
     }

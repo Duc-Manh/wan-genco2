@@ -1,8 +1,21 @@
 export const AUTH_STORAGE_KEY = 'wan_admin_session_v3';
 
+export const UNIT_CREDENTIALS: Record<string, string> = {
+  'Tổng công ty Phát điện 2': '@2026!EVNGENCO2-1',
+  'Ban Quản lý dự án EVNGENCO2': '@2026!EVNGENCO2-2',
+  'Công ty CP Thuỷ điện Thác Mơ': '@2026!EVNGENCO2-3',
+  'Công ty CP Thuỷ điện A Vương': '@2026!EVNGENCO2-4',
+  'Công ty CP Thuỷ điện Sông Ba Hạ': '@2026!EVNGENCO2-5',
+  'Công ty CP NĐ Phả Lại': '@2026!EVNGENCO2-6',
+  'Công ty CP NĐ Hải Phòng': '@2026!EVNGENCO2-7',
+  'Công ty TNHH MTV Thuỷ điện Trung Sơn': '@2026!EVNGENCO2-8',
+};
+
 export interface AuthSession {
   token: string;
   expiresAt: number;
+  unit?: string;
+  unitName?: string;
 }
 
 export class AuthManager {
@@ -10,6 +23,8 @@ export class AuthManager {
   private static lockedUntil = 0;
   private static readonly MAX_ATTEMPTS = 3;
   private static readonly LOCKOUT_TIME_MS = 5 * 60 * 1000; // 5 phút
+  private static readonly LOCKOUT_KEY = 'wan_auth_lockout_until';
+  private static readonly ATTEMPTS_KEY = 'wan_auth_failed_attempts';
 
   public static isAuthenticated(): boolean {
     try {
@@ -41,17 +56,49 @@ export class AuthManager {
     return null;
   }
 
+  public static getToken(): string | null {
+    return this.getAuthToken();
+  }
+
+  public static getLoggedInUnit(): string {
+    try {
+      const raw = sessionStorage.getItem(AUTH_STORAGE_KEY) || localStorage.getItem(AUTH_STORAGE_KEY);
+      if (!raw) return 'EVNGENCO2';
+      const session: AuthSession = JSON.parse(raw);
+      return session?.unitName || session?.unit || 'EVNGENCO2';
+    } catch {
+      return 'EVNGENCO2';
+    }
+  }
+
   public static getRemainingLockoutSeconds(): number {
-    if (Date.now() < this.lockedUntil) {
-      return Math.ceil((this.lockedUntil - Date.now()) / 1000);
+    let until = this.lockedUntil;
+    try {
+      const stored = Number(localStorage.getItem(this.LOCKOUT_KEY) || 0);
+      if (stored > until) until = stored;
+    } catch {}
+    if (Date.now() < until) {
+      return Math.ceil((until - Date.now()) / 1000);
     }
     return 0;
   }
 
-  public static async login(code: string): Promise<{ success: boolean; error?: string }> {
-    const trimmed = code.trim();
-    if (!trimmed) {
-      return { success: false, error: 'Vui lòng nhập mã xác thực!' };
+  public static async login(
+    unitOrCode: string,
+    maybePassword?: string
+  ): Promise<{ success: boolean; error?: string; remainingAttempts?: number; locked?: boolean; waitSeconds?: number }> {
+    let unit = '';
+    let password = '';
+
+    if (maybePassword !== undefined) {
+      unit = unitOrCode.trim();
+      password = maybePassword.trim();
+    } else {
+      password = unitOrCode.trim();
+    }
+
+    if (!password) {
+      return { success: false, error: 'Vui lòng nhập mật khẩu truy cập!' };
     }
 
     // Kiểm tra giới hạn khóa do nhập sai quá 3 lần (khóa 5 phút)
@@ -60,16 +107,18 @@ export class AuthManager {
       const waitMin = Math.ceil(waitSec / 60);
       return {
         success: false,
+        locked: true,
+        waitSeconds: waitSec,
         error: `Tài khoản tạm khóa do nhập sai quá 3 lần liên tiếp. Vui lòng thử lại sau ${waitSec} giây (~${waitMin} phút).`,
       };
     }
 
-    // Xác thực an toàn duy nhất qua Server API /api/auth
+    // Xác thực an toàn qua Server API /api/auth
     try {
       const res = await fetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: trimmed }),
+        body: JSON.stringify({ unit, password, code: password }),
       });
 
       const data = await res.json();
@@ -78,47 +127,129 @@ export class AuthManager {
         this.saveSession({
           token: data.token,
           expiresAt: data.expiresAt || Date.now() + 8 * 3600 * 1000,
+          unit: data.unit || unit,
+          unitName: data.unit || unit,
         });
-        this.failedAttempts = 0;
-        this.lockedUntil = 0;
+        this.clearFailedAttempts();
         window.dispatchEvent(new CustomEvent('wan:auth-changed', { detail: { isAuthenticated: true } }));
         return { success: true };
       }
 
       if (res.status === 429) {
         const sec = data.waitSeconds || 300;
-        this.lockedUntil = Date.now() + sec * 1000;
+        this.setLockout(sec);
         return {
           success: false,
+          locked: true,
+          waitSeconds: sec,
+          remainingAttempts: 0,
           error: data.error || `Bạn đã nhập sai 3 lần liên tiếp. Hệ thống khóa đăng nhập trong 5 phút.`,
         };
       }
 
       if (res.status === 401) {
-        this.recordFailedAttempt();
+        const rec = this.recordFailedAttempt();
         return {
           success: false,
-          error: data.error || 'Mã xác thực không chính xác!',
+          remainingAttempts: data.remainingAttempts !== undefined ? data.remainingAttempts : rec.remainingAttempts,
+          locked: rec.locked,
+          waitSeconds: rec.waitSeconds,
+          error: data.error || (unit ? `Mật khẩu không chính xác cho ${unit}!` : 'Mật khẩu xác thực không chính xác!'),
         };
       }
 
       return {
         success: false,
-        error: data.error || 'Lỗi kiểm tra mã xác thực từ máy chủ!',
+        error: data.error || 'Lỗi kiểm tra mật khẩu từ máy chủ!',
       };
     } catch {
+      // Fallback cục bộ khi không có mạng/server
+      const expected = unit ? UNIT_CREDENTIALS[unit] : undefined;
+      let isMatch = false;
+      let matchedUnit = unit;
+
+      if (expected && expected === password) {
+        isMatch = true;
+      } else if (!unit) {
+        for (const [uName, uPass] of Object.entries(UNIT_CREDENTIALS)) {
+          if (uPass === password) {
+            isMatch = true;
+            matchedUnit = uName;
+            break;
+          }
+        }
+      }
+
+      if (isMatch) {
+        this.saveSession({
+          token: `local_session_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+          expiresAt: Date.now() + 8 * 3600 * 1000,
+          unit: matchedUnit,
+          unitName: matchedUnit,
+        });
+        this.clearFailedAttempts();
+        window.dispatchEvent(new CustomEvent('wan:auth-changed', { detail: { isAuthenticated: true } }));
+        return { success: true };
+      }
+
+      const rec = this.recordFailedAttempt();
+      if (rec.locked) {
+        return {
+          success: false,
+          locked: true,
+          waitSeconds: rec.waitSeconds,
+          remainingAttempts: 0,
+          error: 'Bạn đã nhập mật khẩu sai 3 lần liên tiếp. Hệ thống tạm khóa đăng nhập trong 5 phút.',
+        };
+      }
       return {
         success: false,
-        error: 'Không thể kết nối đến máy chủ xác thực. Vui lòng kiểm tra lại kết nối mạng!',
+        remainingAttempts: rec.remainingAttempts,
+        error: unit
+          ? `Mật khẩu không chính xác cho ${unit}! (Còn ${rec.remainingAttempts} lần thử trước khi bị khóa 5 phút)`
+          : `Mật khẩu xác thực không chính xác! (Còn ${rec.remainingAttempts} lần thử trước khi bị khóa 5 phút)`,
       };
     }
   }
 
-  private static recordFailedAttempt(): void {
-    this.failedAttempts++;
-    if (this.failedAttempts >= this.MAX_ATTEMPTS) {
-      this.lockedUntil = Date.now() + this.LOCKOUT_TIME_MS; // Khóa 5 phút
+  private static setLockout(waitSeconds: number): void {
+    const until = Date.now() + waitSeconds * 1000;
+    this.lockedUntil = until;
+    try {
+      localStorage.setItem(this.LOCKOUT_KEY, String(until));
+    } catch {}
+  }
+
+  private static recordFailedAttempt(): { locked: boolean; waitSeconds: number; remainingAttempts: number } {
+    let attempts = 0;
+    try {
+      attempts = Number(localStorage.getItem(this.ATTEMPTS_KEY) || 0);
+    } catch {}
+    attempts++;
+    this.failedAttempts = attempts;
+    try {
+      localStorage.setItem(this.ATTEMPTS_KEY, String(attempts));
+    } catch {}
+
+    if (attempts >= this.MAX_ATTEMPTS) {
+      const until = Date.now() + this.LOCKOUT_TIME_MS;
+      this.lockedUntil = until;
+      try {
+        localStorage.setItem(this.LOCKOUT_KEY, String(until));
+      } catch {}
+      return { locked: true, waitSeconds: 300, remainingAttempts: 0 };
     }
+
+    return { locked: false, waitSeconds: 0, remainingAttempts: Math.max(0, this.MAX_ATTEMPTS - attempts) };
+  }
+
+  private static clearFailedAttempts(): void {
+    this.failedAttempts = 0;
+    this.lockedUntil = 0;
+    try {
+      localStorage.removeItem(this.LOCKOUT_KEY);
+      localStorage.removeItem(this.ATTEMPTS_KEY);
+    } catch {}
   }
 
   private static saveSession(session: AuthSession): void {
@@ -205,7 +336,7 @@ export class AuthWidget {
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                   <polyline points="20 6 9 17 4 12"/>
                 </svg>
-                <span>Quyền: Quản trị viên</span>
+                <span>Đơn vị: ${AuthManager.getLoggedInUnit()}</span>
               </div>
               <p class="wan-auth-desc">Bạn có quyền nhập và chỉnh sửa dữ liệu tại bảng <strong>Triển khai thực tế</strong>.</p>
               <button id="btn-auth-logout" class="wan-btn-auth-action danger">Đăng xuất</button>
@@ -275,6 +406,7 @@ export class AuthWidget {
         AuthManager.logout();
         this.isOpen = false;
         this.render();
+        window.dispatchEvent(new CustomEvent('wan:logout'));
         return;
       }
 
