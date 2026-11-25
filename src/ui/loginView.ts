@@ -113,10 +113,6 @@ export class LoginView {
 
     this.container.innerHTML = `
       <div class="wan-login-screen">
-        <div class="wan-login-bg-glow glow-1"></div>
-        <div class="wan-login-bg-glow glow-2"></div>
-        <div class="wan-login-grid-pattern"></div>
-
         <div class="wan-login-card">
           <!-- Logo & Brand Header -->
           <div class="wan-login-brand">
