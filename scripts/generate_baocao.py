@@ -185,8 +185,9 @@ if __name__ == '__main__':
         {'name': 'trungson', 'headers': headers, 'rows': []},
     ]
 
-    # 2. Cấu hình các sheet cho file attt.xlsx và rmcc.xlsx
+    # 2. Cấu hình các sheet cho file attt.xlsx và rmcc.xlsx (gồm ge2pmb và 6 nhà máy)
     other_sheets = [
+        {'name': 'ge2pmb', 'headers': headers, 'rows': []},
         {'name': 'thacmo', 'headers': headers, 'rows': []},
         {'name': 'avuong', 'headers': headers, 'rows': []},
         {'name': 'songbaha', 'headers': headers, 'rows': []},

@@ -502,6 +502,7 @@ const WAN_SHEETS                       = [
   { id: 'trungson', name: 'Thủy điện Trung Sơn' },
 ];
 const ATTT_SHEETS                       = [
+  { id: 'ge2pmb', name: 'Ban QLDA (ge2pmb)' },
   { id: 'thacmo', name: 'Thủy điện Thác Mơ' },
   { id: 'avuong', name: 'Thủy điện A Vương' },
   { id: 'songbaha', name: 'Thủy điện Sông Ba Hạ' },
@@ -510,6 +511,7 @@ const ATTT_SHEETS                       = [
   { id: 'trungson', name: 'Thủy điện Trung Sơn' },
 ];
 const RMCC_SHEETS                       = [
+  { id: 'ge2pmb', name: 'Ban QLDA (ge2pmb)' },
   { id: 'thacmo', name: 'Thủy điện Thác Mơ' },
   { id: 'avuong', name: 'Thủy điện A Vương' },
   { id: 'songbaha', name: 'Thủy điện Sông Ba Hạ' },
@@ -531,7 +533,7 @@ function getSheetForLoggedInUnit(unitName        , allowedSheets                
   if (targetId && allowedSheets.some((s) => s.id === targetId)) {
     return targetId;
   }
-  return allowedSheets[0]?.id || 'thacmo';
+  return allowedSheets[0]?.id || 'ge2pmb';
 }
 function isUnitMatchingSheet(unitName        , sheetId        )          {
   if (!unitName) return false;
@@ -3245,7 +3247,7 @@ class AtttReport {
           modalOverlay                     = null;
           isAddingRow          = false;
           editingId                = null;
-          activeSheet         = 'thacmo';
+          activeSheet         = 'ge2pmb';
                    sheets                       = ATTT_SHEETS;
 
   constructor(container             ) {
@@ -3783,7 +3785,7 @@ class RmccReport {
           modalOverlay                     = null;
           isAddingRow          = false;
           editingId                = null;
-          activeSheet         = 'thacmo';
+          activeSheet         = 'ge2pmb';
                    sheets                       = RMCC_SHEETS;
 
   constructor(container             ) {

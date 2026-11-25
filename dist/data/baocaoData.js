@@ -90,6 +90,7 @@ export const WAN_SHEETS                       = [
 ];
 
 export const ATTT_SHEETS                       = [
+  { id: 'ge2pmb', name: 'Ban QLDA (ge2pmb)' },
   { id: 'thacmo', name: 'Thủy điện Thác Mơ' },
   { id: 'avuong', name: 'Thủy điện A Vương' },
   { id: 'songbaha', name: 'Thủy điện Sông Ba Hạ' },
@@ -99,6 +100,7 @@ export const ATTT_SHEETS                       = [
 ];
 
 export const RMCC_SHEETS                       = [
+  { id: 'ge2pmb', name: 'Ban QLDA (ge2pmb)' },
   { id: 'thacmo', name: 'Thủy điện Thác Mơ' },
   { id: 'avuong', name: 'Thủy điện A Vương' },
   { id: 'songbaha', name: 'Thủy điện Sông Ba Hạ' },
@@ -121,7 +123,7 @@ export function getSheetForLoggedInUnit(unitName        , allowedSheets         
   if (targetId && allowedSheets.some((s) => s.id === targetId)) {
     return targetId;
   }
-  return allowedSheets[0]?.id || 'thacmo';
+  return allowedSheets[0]?.id || 'ge2pmb';
 }
 
 export function isUnitMatchingSheet(unitName        , sheetId        )          {

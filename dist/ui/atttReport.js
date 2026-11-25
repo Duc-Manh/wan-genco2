@@ -17,7 +17,7 @@ export class AtttReport {
           modalOverlay                     = null;
           isAddingRow          = false;
           editingId                = null;
-          activeSheet         = 'thacmo';
+          activeSheet         = 'ge2pmb';
                    sheets                       = ATTT_SHEETS;
 
   constructor(container             ) {

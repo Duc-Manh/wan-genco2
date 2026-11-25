@@ -17,7 +17,7 @@ export class RmccReport {
   private modalOverlay: HTMLElement | null = null;
   private isAddingRow: boolean = false;
   private editingId: string | null = null;
-  private activeSheet: string = 'thacmo';
+  private activeSheet: string = 'ge2pmb';
   private readonly sheets: ProjectSheetConfig[] = RMCC_SHEETS;
 
   constructor(container: HTMLElement) {

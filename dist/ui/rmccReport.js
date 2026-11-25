@@ -17,7 +17,7 @@ export class RmccReport {
           modalOverlay                     = null;
           isAddingRow          = false;
           editingId                = null;
-          activeSheet         = 'thacmo';
+          activeSheet         = 'ge2pmb';
                    sheets                       = RMCC_SHEETS;
 
   constructor(container             ) {
