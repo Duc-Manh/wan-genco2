@@ -74,74 +74,146 @@ export const INITIAL_BAOCAO_ITEMS: BaocaoItem[] = [
   },
 ];
 
-const STORAGE_KEY = 'wan_baocao_data';
+export interface ProjectSheetConfig {
+  id: string;
+  name: string;
+}
 
-export class BaocaoStore {
-  public static getItems(): BaocaoItem[] {
+export const WAN_SHEETS: ProjectSheetConfig[] = [
+  { id: 'ge2pmb', name: 'Ban QLDA (ge2pmb)' },
+  { id: 'thacmo', name: 'Thủy điện Thác Mơ' },
+  { id: 'avuong', name: 'Thủy điện A Vương' },
+  { id: 'songbaha', name: 'Thủy điện Sông Ba Hạ' },
+  { id: 'phalai', name: 'Nhiệt điện Phả Lại' },
+  { id: 'haiphong', name: 'Nhiệt điện Hải Phòng' },
+  { id: 'trungson', name: 'Thủy điện Trung Sơn' },
+];
+
+export const ATTT_SHEETS: ProjectSheetConfig[] = [
+  { id: 'thacmo', name: 'Thủy điện Thác Mơ' },
+  { id: 'avuong', name: 'Thủy điện A Vương' },
+  { id: 'songbaha', name: 'Thủy điện Sông Ba Hạ' },
+  { id: 'phalai', name: 'Nhiệt điện Phả Lại' },
+  { id: 'haiphong', name: 'Nhiệt điện Hải Phòng' },
+  { id: 'trungson', name: 'Thủy điện Trung Sơn' },
+];
+
+export const RMCC_SHEETS: ProjectSheetConfig[] = [
+  { id: 'thacmo', name: 'Thủy điện Thác Mơ' },
+  { id: 'avuong', name: 'Thủy điện A Vương' },
+  { id: 'songbaha', name: 'Thủy điện Sông Ba Hạ' },
+  { id: 'phalai', name: 'Nhiệt điện Phả Lại' },
+  { id: 'haiphong', name: 'Nhiệt điện Hải Phòng' },
+  { id: 'trungson', name: 'Thủy điện Trung Sơn' },
+];
+
+export function getSheetForLoggedInUnit(unitName: string, allowedSheets: ProjectSheetConfig[]): string {
+  const mapping: Record<string, string> = {
+    'Ban Quản lý dự án EVNGENCO2': 'ge2pmb',
+    'Công ty CP Thuỷ điện Thác Mơ': 'thacmo',
+    'Công ty CP Thuỷ điện A Vương': 'avuong',
+    'Công ty CP Thuỷ điện Sông Ba Hạ': 'songbaha',
+    'Công ty CP NĐ Phả Lại': 'phalai',
+    'Công ty CP NĐ Hải Phòng': 'haiphong',
+    'Công ty TNHH MTV Thuỷ điện Trung Sơn': 'trungson',
+  };
+  const targetId = mapping[unitName];
+  if (targetId && allowedSheets.some((s) => s.id === targetId)) {
+    return targetId;
+  }
+  return allowedSheets[0]?.id || 'thacmo';
+}
+
+export class ProjectReportStore {
+  public static getStorageKey(projectId: string, sheetId: string): string {
+    if (projectId === 'wan' && sheetId === 'ge2pmb') {
+      return 'wan_baocao_data';
+    }
+    return `${projectId}_report_${sheetId}_data`;
+  }
+
+  public static getItems(projectId: string, sheetId: string): BaocaoItem[] {
+    const key = this.getStorageKey(projectId, sheetId);
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      const stored = localStorage.getItem(key);
       if (stored !== null) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          // Lọc bỏ các hàng nội dung mẫu cũ nếu còn lưu trong cache trình duyệt
+        if (Array.isArray(parsed)) {
           const sampleIds = new Set(['bc-1', 'bc-2', 'bc-3', 'bc-4', 'bc-5']);
           const filtered = parsed.filter((item: BaocaoItem) => !sampleIds.has(item.id));
-          if (filtered.length > 0) {
-            return this.sortDesc(filtered);
-          }
+          return BaocaoStore.sortDesc(filtered);
         }
       }
-    } catch {
-      // Fallback
+    } catch {}
+    if (projectId === 'wan' && sheetId === 'ge2pmb') {
+      return BaocaoStore.sortDesc(INITIAL_BAOCAO_ITEMS);
     }
-    return this.sortDesc(INITIAL_BAOCAO_ITEMS);
+    return [];
   }
 
-  public static saveItems(items: BaocaoItem[]): void {
+  public static saveItems(projectId: string, sheetId: string, items: BaocaoItem[]): void {
+    const key = this.getStorageKey(projectId, sheetId);
     try {
-      const sorted = this.sortDesc(items);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(sorted));
-    } catch {
-      // Ignore quota error
-    }
+      const sorted = BaocaoStore.sortDesc(items);
+      localStorage.setItem(key, JSON.stringify(sorted));
+    } catch {}
   }
 
-  public static addItem(item: Omit<BaocaoItem, 'id'>): BaocaoItem {
-    const items = this.getItems();
+  public static addItem(projectId: string, sheetId: string, item: Omit<BaocaoItem, 'id'>): BaocaoItem {
+    const items = this.getItems(projectId, sheetId);
     const newItem: BaocaoItem = {
-      id: `bc-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      id: `${projectId}-${sheetId}-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       time: item.time.trim(),
       content: item.content.trim(),
       status: item.status.trim() || 'Đang thực hiện',
     };
     items.push(newItem);
-    const sorted = this.sortDesc(items);
-    this.saveItems(sorted);
+    this.saveItems(projectId, sheetId, items);
     return newItem;
   }
 
-  public static updateItem(id: string, updated: Partial<Omit<BaocaoItem, 'id'>>): boolean {
-    const items = this.getItems();
+  public static updateItem(projectId: string, sheetId: string, id: string, updated: Partial<Omit<BaocaoItem, 'id'>>): boolean {
+    const items = this.getItems(projectId, sheetId);
     const idx = items.findIndex((i) => i.id === id);
     if (idx === -1) return false;
-    items[idx] = {
-      ...items[idx],
-      ...updated,
-    };
-    const sorted = this.sortDesc(items);
-    this.saveItems(sorted);
+    items[idx] = { ...items[idx], ...updated };
+    this.saveItems(projectId, sheetId, items);
     return true;
   }
 
-  public static deleteItem(id: string): boolean {
-    let items = this.getItems();
+  public static deleteItem(projectId: string, sheetId: string, id: string): boolean {
+    let items = this.getItems(projectId, sheetId);
     const beforeLen = items.length;
     items = items.filter((i) => i.id !== id);
     if (items.length !== beforeLen) {
-      this.saveItems(items);
+      this.saveItems(projectId, sheetId, items);
       return true;
     }
     return false;
+  }
+}
+
+const STORAGE_KEY = 'wan_baocao_data';
+
+export class BaocaoStore {
+  public static getItems(): BaocaoItem[] {
+    return ProjectReportStore.getItems('wan', 'ge2pmb');
+  }
+
+  public static saveItems(items: BaocaoItem[]): void {
+    ProjectReportStore.saveItems('wan', 'ge2pmb', items);
+  }
+
+  public static addItem(item: Omit<BaocaoItem, 'id'>): BaocaoItem {
+    return ProjectReportStore.addItem('wan', 'ge2pmb', item);
+  }
+
+  public static updateItem(id: string, updated: Partial<Omit<BaocaoItem, 'id'>>): boolean {
+    return ProjectReportStore.updateItem('wan', 'ge2pmb', id, updated);
+  }
+
+  public static deleteItem(id: string): boolean {
+    return ProjectReportStore.deleteItem('wan', 'ge2pmb', id);
   }
 
   // Sắp xếp thời gian mới nhất (trễ nhất) lên trên cùng, thời gian cũ hơn xếp dưới

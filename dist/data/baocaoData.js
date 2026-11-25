@@ -74,74 +74,146 @@ export const INITIAL_BAOCAO_ITEMS               = [
   },
 ];
 
-const STORAGE_KEY = 'wan_baocao_data';
+                                     
+             
+               
+ 
 
-export class BaocaoStore {
-         static getItems()               {
+export const WAN_SHEETS                       = [
+  { id: 'ge2pmb', name: 'Ban QLDA (ge2pmb)' },
+  { id: 'thacmo', name: 'Thủy điện Thác Mơ' },
+  { id: 'avuong', name: 'Thủy điện A Vương' },
+  { id: 'songbaha', name: 'Thủy điện Sông Ba Hạ' },
+  { id: 'phalai', name: 'Nhiệt điện Phả Lại' },
+  { id: 'haiphong', name: 'Nhiệt điện Hải Phòng' },
+  { id: 'trungson', name: 'Thủy điện Trung Sơn' },
+];
+
+export const ATTT_SHEETS                       = [
+  { id: 'thacmo', name: 'Thủy điện Thác Mơ' },
+  { id: 'avuong', name: 'Thủy điện A Vương' },
+  { id: 'songbaha', name: 'Thủy điện Sông Ba Hạ' },
+  { id: 'phalai', name: 'Nhiệt điện Phả Lại' },
+  { id: 'haiphong', name: 'Nhiệt điện Hải Phòng' },
+  { id: 'trungson', name: 'Thủy điện Trung Sơn' },
+];
+
+export const RMCC_SHEETS                       = [
+  { id: 'thacmo', name: 'Thủy điện Thác Mơ' },
+  { id: 'avuong', name: 'Thủy điện A Vương' },
+  { id: 'songbaha', name: 'Thủy điện Sông Ba Hạ' },
+  { id: 'phalai', name: 'Nhiệt điện Phả Lại' },
+  { id: 'haiphong', name: 'Nhiệt điện Hải Phòng' },
+  { id: 'trungson', name: 'Thủy điện Trung Sơn' },
+];
+
+export function getSheetForLoggedInUnit(unitName        , allowedSheets                      )         {
+  const mapping                         = {
+    'Ban Quản lý dự án EVNGENCO2': 'ge2pmb',
+    'Công ty CP Thuỷ điện Thác Mơ': 'thacmo',
+    'Công ty CP Thuỷ điện A Vương': 'avuong',
+    'Công ty CP Thuỷ điện Sông Ba Hạ': 'songbaha',
+    'Công ty CP NĐ Phả Lại': 'phalai',
+    'Công ty CP NĐ Hải Phòng': 'haiphong',
+    'Công ty TNHH MTV Thuỷ điện Trung Sơn': 'trungson',
+  };
+  const targetId = mapping[unitName];
+  if (targetId && allowedSheets.some((s) => s.id === targetId)) {
+    return targetId;
+  }
+  return allowedSheets[0]?.id || 'thacmo';
+}
+
+export class ProjectReportStore {
+         static getStorageKey(projectId        , sheetId        )         {
+    if (projectId === 'wan' && sheetId === 'ge2pmb') {
+      return 'wan_baocao_data';
+    }
+    return `${projectId}_report_${sheetId}_data`;
+  }
+
+         static getItems(projectId        , sheetId        )               {
+    const key = this.getStorageKey(projectId, sheetId);
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      const stored = localStorage.getItem(key);
       if (stored !== null) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          // Lọc bỏ các hàng nội dung mẫu cũ nếu còn lưu trong cache trình duyệt
+        if (Array.isArray(parsed)) {
           const sampleIds = new Set(['bc-1', 'bc-2', 'bc-3', 'bc-4', 'bc-5']);
           const filtered = parsed.filter((item            ) => !sampleIds.has(item.id));
-          if (filtered.length > 0) {
-            return this.sortDesc(filtered);
-          }
+          return BaocaoStore.sortDesc(filtered);
         }
       }
-    } catch {
-      // Fallback
+    } catch {}
+    if (projectId === 'wan' && sheetId === 'ge2pmb') {
+      return BaocaoStore.sortDesc(INITIAL_BAOCAO_ITEMS);
     }
-    return this.sortDesc(INITIAL_BAOCAO_ITEMS);
+    return [];
   }
 
-         static saveItems(items              )       {
+         static saveItems(projectId        , sheetId        , items              )       {
+    const key = this.getStorageKey(projectId, sheetId);
     try {
-      const sorted = this.sortDesc(items);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(sorted));
-    } catch {
-      // Ignore quota error
-    }
+      const sorted = BaocaoStore.sortDesc(items);
+      localStorage.setItem(key, JSON.stringify(sorted));
+    } catch {}
   }
 
-         static addItem(item                        )             {
-    const items = this.getItems();
+         static addItem(projectId        , sheetId        , item                        )             {
+    const items = this.getItems(projectId, sheetId);
     const newItem             = {
-      id: `bc-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      id: `${projectId}-${sheetId}-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       time: item.time.trim(),
       content: item.content.trim(),
       status: item.status.trim() || 'Đang thực hiện',
     };
     items.push(newItem);
-    const sorted = this.sortDesc(items);
-    this.saveItems(sorted);
+    this.saveItems(projectId, sheetId, items);
     return newItem;
   }
 
-         static updateItem(id        , updated                                 )          {
-    const items = this.getItems();
+         static updateItem(projectId        , sheetId        , id        , updated                                 )          {
+    const items = this.getItems(projectId, sheetId);
     const idx = items.findIndex((i) => i.id === id);
     if (idx === -1) return false;
-    items[idx] = {
-      ...items[idx],
-      ...updated,
-    };
-    const sorted = this.sortDesc(items);
-    this.saveItems(sorted);
+    items[idx] = { ...items[idx], ...updated };
+    this.saveItems(projectId, sheetId, items);
     return true;
   }
 
-         static deleteItem(id        )          {
-    let items = this.getItems();
+         static deleteItem(projectId        , sheetId        , id        )          {
+    let items = this.getItems(projectId, sheetId);
     const beforeLen = items.length;
     items = items.filter((i) => i.id !== id);
     if (items.length !== beforeLen) {
-      this.saveItems(items);
+      this.saveItems(projectId, sheetId, items);
       return true;
     }
     return false;
+  }
+}
+
+const STORAGE_KEY = 'wan_baocao_data';
+
+export class BaocaoStore {
+         static getItems()               {
+    return ProjectReportStore.getItems('wan', 'ge2pmb');
+  }
+
+         static saveItems(items              )       {
+    ProjectReportStore.saveItems('wan', 'ge2pmb', items);
+  }
+
+         static addItem(item                        )             {
+    return ProjectReportStore.addItem('wan', 'ge2pmb', item);
+  }
+
+         static updateItem(id        , updated                                 )          {
+    return ProjectReportStore.updateItem('wan', 'ge2pmb', id, updated);
+  }
+
+         static deleteItem(id        )          {
+    return ProjectReportStore.deleteItem('wan', 'ge2pmb', id);
   }
 
   // Sắp xếp thời gian mới nhất (trễ nhất) lên trên cùng, thời gian cũ hơn xếp dưới

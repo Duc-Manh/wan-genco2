@@ -492,74 +492,136 @@ const INITIAL_BAOCAO_ITEMS               = [
     status: 'Hoàn thành',
   },
 ];
+const WAN_SHEETS                       = [
+  { id: 'ge2pmb', name: 'Ban QLDA (ge2pmb)' },
+  { id: 'thacmo', name: 'Thủy điện Thác Mơ' },
+  { id: 'avuong', name: 'Thủy điện A Vương' },
+  { id: 'songbaha', name: 'Thủy điện Sông Ba Hạ' },
+  { id: 'phalai', name: 'Nhiệt điện Phả Lại' },
+  { id: 'haiphong', name: 'Nhiệt điện Hải Phòng' },
+  { id: 'trungson', name: 'Thủy điện Trung Sơn' },
+];
+const ATTT_SHEETS                       = [
+  { id: 'thacmo', name: 'Thủy điện Thác Mơ' },
+  { id: 'avuong', name: 'Thủy điện A Vương' },
+  { id: 'songbaha', name: 'Thủy điện Sông Ba Hạ' },
+  { id: 'phalai', name: 'Nhiệt điện Phả Lại' },
+  { id: 'haiphong', name: 'Nhiệt điện Hải Phòng' },
+  { id: 'trungson', name: 'Thủy điện Trung Sơn' },
+];
+const RMCC_SHEETS                       = [
+  { id: 'thacmo', name: 'Thủy điện Thác Mơ' },
+  { id: 'avuong', name: 'Thủy điện A Vương' },
+  { id: 'songbaha', name: 'Thủy điện Sông Ba Hạ' },
+  { id: 'phalai', name: 'Nhiệt điện Phả Lại' },
+  { id: 'haiphong', name: 'Nhiệt điện Hải Phòng' },
+  { id: 'trungson', name: 'Thủy điện Trung Sơn' },
+];
+function getSheetForLoggedInUnit(unitName        , allowedSheets                      )         {
+  const mapping                         = {
+    'Ban Quản lý dự án EVNGENCO2': 'ge2pmb',
+    'Công ty CP Thuỷ điện Thác Mơ': 'thacmo',
+    'Công ty CP Thuỷ điện A Vương': 'avuong',
+    'Công ty CP Thuỷ điện Sông Ba Hạ': 'songbaha',
+    'Công ty CP NĐ Phả Lại': 'phalai',
+    'Công ty CP NĐ Hải Phòng': 'haiphong',
+    'Công ty TNHH MTV Thuỷ điện Trung Sơn': 'trungson',
+  };
+  const targetId = mapping[unitName];
+  if (targetId && allowedSheets.some((s) => s.id === targetId)) {
+    return targetId;
+  }
+  return allowedSheets[0]?.id || 'thacmo';
+}
+class ProjectReportStore {
+         static getStorageKey(projectId        , sheetId        )         {
+    if (projectId === 'wan' && sheetId === 'ge2pmb') {
+      return 'wan_baocao_data';
+    }
+    return `${projectId}_report_${sheetId}_data`;
+  }
 
-const STORAGE_KEY = 'wan_baocao_data';
-class BaocaoStore {
-         static getItems()               {
+         static getItems(projectId        , sheetId        )               {
+    const key = this.getStorageKey(projectId, sheetId);
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      const stored = localStorage.getItem(key);
       if (stored !== null) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          // Lọc bỏ các hàng nội dung mẫu cũ nếu còn lưu trong cache trình duyệt
+        if (Array.isArray(parsed)) {
           const sampleIds = new Set(['bc-1', 'bc-2', 'bc-3', 'bc-4', 'bc-5']);
           const filtered = parsed.filter((item            ) => !sampleIds.has(item.id));
-          if (filtered.length > 0) {
-            return this.sortDesc(filtered);
-          }
+          return BaocaoStore.sortDesc(filtered);
         }
       }
-    } catch {
-      // Fallback
+    } catch {}
+    if (projectId === 'wan' && sheetId === 'ge2pmb') {
+      return BaocaoStore.sortDesc(INITIAL_BAOCAO_ITEMS);
     }
-    return this.sortDesc(INITIAL_BAOCAO_ITEMS);
+    return [];
   }
 
-         static saveItems(items              )       {
+         static saveItems(projectId        , sheetId        , items              )       {
+    const key = this.getStorageKey(projectId, sheetId);
     try {
-      const sorted = this.sortDesc(items);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(sorted));
-    } catch {
-      // Ignore quota error
-    }
+      const sorted = BaocaoStore.sortDesc(items);
+      localStorage.setItem(key, JSON.stringify(sorted));
+    } catch {}
   }
 
-         static addItem(item                        )             {
-    const items = this.getItems();
+         static addItem(projectId        , sheetId        , item                        )             {
+    const items = this.getItems(projectId, sheetId);
     const newItem             = {
-      id: `bc-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      id: `${projectId}-${sheetId}-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       time: item.time.trim(),
       content: item.content.trim(),
       status: item.status.trim() || 'Đang thực hiện',
     };
     items.push(newItem);
-    const sorted = this.sortDesc(items);
-    this.saveItems(sorted);
+    this.saveItems(projectId, sheetId, items);
     return newItem;
   }
 
-         static updateItem(id        , updated                                 )          {
-    const items = this.getItems();
+         static updateItem(projectId        , sheetId        , id        , updated                                 )          {
+    const items = this.getItems(projectId, sheetId);
     const idx = items.findIndex((i) => i.id === id);
     if (idx === -1) return false;
-    items[idx] = {
-      ...items[idx],
-      ...updated,
-    };
-    const sorted = this.sortDesc(items);
-    this.saveItems(sorted);
+    items[idx] = { ...items[idx], ...updated };
+    this.saveItems(projectId, sheetId, items);
     return true;
   }
 
-         static deleteItem(id        )          {
-    let items = this.getItems();
+         static deleteItem(projectId        , sheetId        , id        )          {
+    let items = this.getItems(projectId, sheetId);
     const beforeLen = items.length;
     items = items.filter((i) => i.id !== id);
     if (items.length !== beforeLen) {
-      this.saveItems(items);
+      this.saveItems(projectId, sheetId, items);
       return true;
     }
     return false;
+  }
+}
+
+const STORAGE_KEY = 'wan_baocao_data';
+class BaocaoStore {
+         static getItems()               {
+    return ProjectReportStore.getItems('wan', 'ge2pmb');
+  }
+
+         static saveItems(items              )       {
+    ProjectReportStore.saveItems('wan', 'ge2pmb', items);
+  }
+
+         static addItem(item                        )             {
+    return ProjectReportStore.addItem('wan', 'ge2pmb', item);
+  }
+
+         static updateItem(id        , updated                                 )          {
+    return ProjectReportStore.updateItem('wan', 'ge2pmb', id, updated);
+  }
+
+         static deleteItem(id        )          {
+    return ProjectReportStore.deleteItem('wan', 'ge2pmb', id);
   }
 
   // Sắp xếp thời gian mới nhất (trễ nhất) lên trên cùng, thời gian cũ hơn xếp dưới
@@ -2572,10 +2634,10 @@ class AuthWidget {
 }
 
 
-// --- src/ui/deploymentModal.ts ---
+// --- src/ui/wanReport.ts ---
 
 
-function escapeHtml(str     )         {
+function escapeWanHtml(str     )         {
   if (str === null || str === undefined) return '';
   return String(str)
     .replace(/&/g, '&amp;')
@@ -2584,11 +2646,13 @@ function escapeHtml(str     )         {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
-class DeploymentModal {
+class WanReport {
           container             ;
           modalOverlay                     = null;
           isAddingRow          = false;
           editingId                = null;
+          activeSheet         = 'ge2pmb';
+                   sheets                       = WAN_SHEETS;
 
   constructor(container             ) {
     this.container = container;
@@ -2611,13 +2675,17 @@ class DeploymentModal {
     this.isAddingRow = false;
     this.editingId = null;
 
-    // Tải đồng bộ mới nhất từ server nếu có
+    // Tự động chọn sheet tương ứng theo đơn vị đăng nhập
+    const loggedUnit = AuthManager.getLoggedInUnit();
+    this.activeSheet = getSheetForLoggedInUnit(loggedUnit, this.sheets);
+
+    // Tải đồng bộ mới nhất từ server nếu có cho ge2pmb
     try {
       const res = await fetch('/api/baocao');
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
-          BaocaoStore.saveItems(data);
+          ProjectReportStore.saveItems('wan', 'ge2pmb', data);
         }
       }
     } catch {
@@ -2652,7 +2720,7 @@ class DeploymentModal {
           render()       {
     if (!this.modalOverlay) return;
 
-    const items = BaocaoStore.getItems();
+    const items = ProjectReportStore.getItems('wan', this.activeSheet);
     const isAuthed = AuthManager.isAuthenticated();
 
     let tableRowsHtml = '';
@@ -2664,13 +2732,13 @@ class DeploymentModal {
         <tr class="wan-deploy-row-edit adding-new">
           <td class="wan-dp-col-stt">Mới</td>
           <td class="wan-dp-col-time">
-            <input id="input-new-time" type="text" class="wan-dp-input" value="${defaultTime}" placeholder="dd/mm/yyyy" />
+            <input id="wan-input-new-time" type="text" class="wan-dp-input" value="${defaultTime}" placeholder="dd/mm/yyyy" />
           </td>
           <td class="wan-dp-col-content">
-            <textarea id="input-new-content" class="wan-dp-textarea" placeholder="Nhập nội dung triển khai thực tế..." rows="1" autofocus></textarea>
+            <textarea id="wan-input-new-content" class="wan-dp-textarea" placeholder="Nhập nội dung triển khai thực tế..." rows="1" autofocus></textarea>
           </td>
           <td class="wan-dp-col-status">
-            <select id="select-new-status" class="wan-dp-select">
+            <select id="wan-select-new-status" class="wan-dp-select">
               <option value="Đang thực hiện">Đang thực hiện</option>
               <option value="Hoàn thành">Hoàn thành</option>
               <option value="Chờ xử lý">Chờ xử lý</option>
@@ -2678,8 +2746,8 @@ class DeploymentModal {
             </select>
           </td>
           <td class="wan-dp-col-action">
-            <button id="btn-save-new-row" class="wan-dp-btn save" title="Lưu hàng mới">Lưu</button>
-            <button id="btn-cancel-new-row" class="wan-dp-btn cancel" title="Hủy bỏ">Hủy</button>
+            <button id="wan-btn-save-new-row" class="wan-dp-btn save" title="Lưu hàng mới">Lưu</button>
+            <button id="wan-btn-cancel-new-row" class="wan-dp-btn cancel" title="Hủy bỏ">Hủy</button>
           </td>
         </tr>
       `;
@@ -2688,7 +2756,7 @@ class DeploymentModal {
     if (items.length === 0 && !this.isAddingRow) {
       tableRowsHtml = `
         <tr>
-          <td colspan="${isAuthed ? 5 : 4}" class="wan-deploy-empty">Chưa có báo cáo triển khai thực tế nào.</td>
+          <td colspan="${isAuthed ? 5 : 4}" class="wan-deploy-empty">Chưa có báo cáo triển khai thực tế nào trong sheet [${escapeWanHtml(this.activeSheet)}].</td>
         </tr>
       `;
     } else {
@@ -2700,13 +2768,13 @@ class DeploymentModal {
             <tr class="wan-deploy-row-edit" data-id="${item.id}">
               <td class="wan-dp-col-stt">${idx + 1}</td>
               <td class="wan-dp-col-time">
-                <input id="edit-time-${item.id}" type="text" class="wan-dp-input" value="${escapeHtml(item.time)}" placeholder="dd/mm/yyyy" />
+                <input id="wan-edit-time-${item.id}" type="text" class="wan-dp-input" value="${escapeWanHtml(item.time)}" placeholder="dd/mm/yyyy" />
               </td>
               <td class="wan-dp-col-content">
-                <textarea id="edit-content-${item.id}" class="wan-dp-textarea" placeholder="Nhập nội dung triển khai thực tế..." rows="1">${escapeHtml(item.content)}</textarea>
+                <textarea id="wan-edit-content-${item.id}" class="wan-dp-textarea" placeholder="Nhập nội dung triển khai thực tế..." rows="1">${escapeWanHtml(item.content)}</textarea>
               </td>
               <td class="wan-dp-col-status">
-                <select id="edit-status-${item.id}" class="wan-dp-select">
+                <select id="wan-edit-status-${item.id}" class="wan-dp-select">
                   <option value="Đang thực hiện" ${item.status === 'Đang thực hiện' ? 'selected' : ''}>Đang thực hiện</option>
                   <option value="Hoàn thành" ${item.status === 'Hoàn thành' ? 'selected' : ''}>Hoàn thành</option>
                   <option value="Chờ xử lý" ${item.status === 'Chờ xử lý' ? 'selected' : ''}>Chờ xử lý</option>
@@ -2714,8 +2782,8 @@ class DeploymentModal {
                 </select>
               </td>
               <td class="wan-dp-col-action">
-                <button class="wan-dp-btn save btn-save-edit" data-id="${item.id}" title="Lưu chỉnh sửa">Lưu</button>
-                <button class="wan-dp-btn cancel btn-cancel-edit" data-id="${item.id}" title="Hủy bỏ">Hủy</button>
+                <button class="wan-dp-btn save wan-btn-save-edit" data-id="${item.id}" title="Lưu chỉnh sửa">Lưu</button>
+                <button class="wan-dp-btn cancel wan-btn-cancel-edit" data-id="${item.id}" title="Hủy bỏ">Hủy</button>
               </td>
             </tr>
           `;
@@ -2724,22 +2792,22 @@ class DeploymentModal {
           tableRowsHtml += `
             <tr class="wan-deploy-row" data-id="${item.id}">
               <td class="wan-dp-col-stt">${idx + 1}</td>
-              <td class="wan-dp-col-time"><strong>${escapeHtml(item.time)}</strong></td>
-              <td class="wan-dp-col-content">${escapeHtml(item.content)}</td>
+              <td class="wan-dp-col-time"><strong>${escapeWanHtml(item.time)}</strong></td>
+              <td class="wan-dp-col-content">${escapeWanHtml(item.content)}</td>
               <td class="wan-dp-col-status">
-                <span class="wan-status-badge ${statusClass}">${escapeHtml(item.status)}</span>
+                <span class="wan-status-badge ${statusClass}">${escapeWanHtml(item.status)}</span>
               </td>
               ${
                 isAuthed
                   ? `
                 <td class="wan-dp-col-action">
-                  <button class="wan-dp-action-icon btn-edit-row" data-id="${item.id}" title="Chỉnh sửa hàng">
+                  <button class="wan-dp-action-icon wan-btn-edit-row" data-id="${item.id}" title="Chỉnh sửa hàng">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <path d="M12 20h9"/>
                       <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
                     </svg>
                   </button>
-                  <button class="wan-dp-action-icon danger btn-delete-row" data-id="${item.id}" title="Xóa hàng trong wan.xlsx">
+                  <button class="wan-dp-action-icon danger wan-btn-delete-row" data-id="${item.id}" title="Xóa hàng">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <polyline points="3 6 5 6 21 6"/>
                       <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
@@ -2755,14 +2823,25 @@ class DeploymentModal {
       });
     }
 
+    // Sheet tabs bar
+    const sheetTabsHtml = this.sheets
+      .map(
+        (s) => `
+      <button class="wan-deploy-sheet-tab wan-tab-theme-green ${s.id === this.activeSheet ? 'active' : ''}" data-sheet="${s.id}">
+        ${escapeWanHtml(s.name)}
+      </button>
+    `
+      )
+      .join('');
+
     this.modalOverlay.innerHTML = `
-      <div class="wan-deploy-modal" role="dialog" aria-modal="true" aria-labelledby="deploy-modal-title">
+      <div class="wan-deploy-modal" role="dialog" aria-modal="true" aria-labelledby="wan-deploy-modal-title">
         <!-- Header -->
         <div class="wan-deploy-header">
           <div class="wan-deploy-title-group">
-            <div class="wan-deploy-badge">TRIỂN KHAI THỰC TẾ</div>
+            <div class="wan-deploy-badge" style="background:#16a34a;">DỰ ÁN MẠNG WAN</div>
             <div>
-              <h3 id="deploy-modal-title">Báo cáo tiến độ thực tế</h3>
+              <h3 id="wan-deploy-modal-title">Báo cáo tiến độ thực tế - Dự án mạng WAN</h3>
             </div>
           </div>
 
@@ -2770,22 +2849,22 @@ class DeploymentModal {
             ${
               isAuthed
                 ? `
-              <div class="wan-deploy-role-pill authed" title="Đã nhập mã quản trị">
+              <div class="wan-deploy-role-pill authed" title="Đã đăng nhập: ${escapeWanHtml(AuthManager.getLoggedInUnit())}">
                 <span class="wan-deploy-dot"></span>
-                <span>Quản trị viên (Được phép thêm/sửa)</span>
+                <span>${escapeWanHtml(AuthManager.getLoggedInUnit())}</span>
               </div>
-              <button id="btn-add-deploy-row" class="wan-btn-deploy primary" ${this.isAddingRow ? 'disabled' : ''}>
+              <button id="wan-btn-add-deploy-row" class="wan-btn-deploy primary" ${this.isAddingRow ? 'disabled' : ''}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 <span>Thêm</span>
               </button>
             `
                 : `
-              <div class="wan-deploy-role-pill readonly" title="Chưa xác thực mã đăng nhập">
-                <span>Chế độ chỉ xem (Cần mã đăng nhập để sửa)</span>
+              <div class="wan-deploy-role-pill readonly" title="Chưa xác thực đăng nhập">
+                <span>Chế độ chỉ xem</span>
               </div>
             `
             }
-            <button id="btn-download-baocao" class="wan-btn-deploy secondary" title="Tải file wan.xlsx">
+            <button id="wan-btn-download-excel" class="wan-btn-deploy secondary" title="Tải file wan.xlsx gồm tất cả các sheet">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="7 10 12 15 17 10"/>
@@ -2793,8 +2872,14 @@ class DeploymentModal {
               </svg>
               <span>Xuất wan.xlsx</span>
             </button>
-            <button id="btn-close-deploy-modal" class="wan-deploy-close-btn" title="Đóng bảng">&times;</button>
+            <button id="wan-btn-close-modal" class="wan-deploy-close-btn" title="Đóng bảng">&times;</button>
           </div>
+        </div>
+
+        <!-- Sheet Selector Tabs -->
+        <div class="wan-deploy-sheet-bar">
+          <span class="wan-sheet-label">Sheet / Đơn vị:</span>
+          ${sheetTabsHtml}
         </div>
 
         <!-- Table Viewport -->
@@ -2831,7 +2916,7 @@ class DeploymentModal {
     });
 
     // Close button
-    this.modalOverlay.querySelector('#btn-close-deploy-modal')?.addEventListener('click', () => {
+    this.modalOverlay.querySelector('#wan-btn-close-modal')?.addEventListener('click', () => {
       this.close();
     });
 
@@ -2844,7 +2929,20 @@ class DeploymentModal {
     };
     window.addEventListener('keydown', onKeyDown);
 
-    // Tự động điều chỉnh chiều cao (auto-resize height) cho các thẻ textarea khi nội dung dài
+    // Switch sheet tab
+    this.modalOverlay.querySelectorAll('.wan-deploy-sheet-tab').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        const sheet = (tab               ).dataset.sheet;
+        if (sheet && sheet !== this.activeSheet) {
+          this.activeSheet = sheet;
+          this.isAddingRow = false;
+          this.editingId = null;
+          this.render();
+        }
+      });
+    });
+
+    // Tự động điều chỉnh chiều cao cho các thẻ textarea khi nội dung dài
     this.modalOverlay.querySelectorAll                     ('.wan-dp-textarea').forEach((ta) => {
       const resize = () => {
         ta.style.height = 'auto';
@@ -2855,22 +2953,22 @@ class DeploymentModal {
     });
 
     // Button "+ Thêm"
-    this.modalOverlay.querySelector('#btn-add-deploy-row')?.addEventListener('click', () => {
+    this.modalOverlay.querySelector('#wan-btn-add-deploy-row')?.addEventListener('click', () => {
       if (!AuthManager.isAuthenticated()) return;
       this.isAddingRow = true;
       this.editingId = null;
       this.render();
       setTimeout(() => {
-        const ta = this.modalOverlay?.querySelector('#input-new-content')                              ;
+        const ta = this.modalOverlay?.querySelector('#wan-input-new-content')                              ;
         ta?.focus();
       }, 50);
     });
 
     // Button Save New Row
-    this.modalOverlay.querySelector('#btn-save-new-row')?.addEventListener('click', async () => {
-      const timeInput = this.modalOverlay?.querySelector('#input-new-time')                           ;
-      const contentInput = this.modalOverlay?.querySelector('#input-new-content')                                                 ;
-      const statusSelect = this.modalOverlay?.querySelector('#select-new-status')                            ;
+    this.modalOverlay.querySelector('#wan-btn-save-new-row')?.addEventListener('click', async () => {
+      const timeInput = this.modalOverlay?.querySelector('#wan-input-new-time')                           ;
+      const contentInput = this.modalOverlay?.querySelector('#wan-input-new-content')                                                 ;
+      const statusSelect = this.modalOverlay?.querySelector('#wan-select-new-status')                            ;
 
       if (!contentInput || !contentInput.value.trim()) {
         contentInput?.focus();
@@ -2881,7 +2979,7 @@ class DeploymentModal {
       const contentVal = contentInput.value.trim();
       const statusVal = statusSelect?.value || 'Đang thực hiện';
 
-      BaocaoStore.addItem({
+      ProjectReportStore.addItem('wan', this.activeSheet, {
         time: timeVal,
         content: contentVal,
         status: statusVal,
@@ -2889,18 +2987,20 @@ class DeploymentModal {
 
       this.isAddingRow = false;
       this.render();
-      await this.syncBaocaoToFile();
-      this.showNotice('Đã thêm dòng mới vào wan.xlsx');
+      if (this.activeSheet === 'ge2pmb') {
+        await this.syncBaocaoToFile();
+      }
+      this.showNotice(`Đã thêm dòng mới vào sheet [${this.activeSheet}] của wan.xlsx`);
     });
 
     // Button Cancel New Row
-    this.modalOverlay.querySelector('#btn-cancel-new-row')?.addEventListener('click', () => {
+    this.modalOverlay.querySelector('#wan-btn-cancel-new-row')?.addEventListener('click', () => {
       this.isAddingRow = false;
       this.render();
     });
 
     // Button Edit Row
-    this.modalOverlay.querySelectorAll('.btn-edit-row').forEach((btn) => {
+    this.modalOverlay.querySelectorAll('.wan-btn-edit-row').forEach((btn) => {
       btn.addEventListener('click', () => {
         const id = (btn               ).dataset.id;
         if (id) {
@@ -2912,21 +3012,21 @@ class DeploymentModal {
     });
 
     // Button Save Edit Row
-    this.modalOverlay.querySelectorAll('.btn-save-edit').forEach((btn) => {
+    this.modalOverlay.querySelectorAll('.wan-btn-save-edit').forEach((btn) => {
       btn.addEventListener('click', async () => {
         const id = (btn               ).dataset.id;
         if (!id) return;
 
-        const timeInput = this.modalOverlay?.querySelector(`#edit-time-${id}`)                           ;
-        const contentInput = this.modalOverlay?.querySelector(`#edit-content-${id}`)                                                 ;
-        const statusSelect = this.modalOverlay?.querySelector(`#edit-status-${id}`)                            ;
+        const timeInput = this.modalOverlay?.querySelector(`#wan-edit-time-${id}`)                           ;
+        const contentInput = this.modalOverlay?.querySelector(`#wan-edit-content-${id}`)                                                 ;
+        const statusSelect = this.modalOverlay?.querySelector(`#wan-edit-status-${id}`)                            ;
 
         if (!contentInput || !contentInput.value.trim()) {
           contentInput?.focus();
           return;
         }
 
-        BaocaoStore.updateItem(id, {
+        ProjectReportStore.updateItem('wan', this.activeSheet, id, {
           time: timeInput?.value.trim() || this.getFormattedCurrentTime(),
           content: contentInput.value.trim(),
           status: statusSelect?.value || 'Đang thực hiện',
@@ -2934,13 +3034,15 @@ class DeploymentModal {
 
         this.editingId = null;
         this.render();
-        await this.syncBaocaoToFile();
-        this.showNotice('Đã cập nhật hàng trong wan.xlsx');
+        if (this.activeSheet === 'ge2pmb') {
+          await this.syncBaocaoToFile();
+        }
+        this.showNotice(`Đã cập nhật hàng trong sheet [${this.activeSheet}] của wan.xlsx`);
       });
     });
 
     // Button Cancel Edit Row
-    this.modalOverlay.querySelectorAll('.btn-cancel-edit').forEach((btn) => {
+    this.modalOverlay.querySelectorAll('.wan-btn-cancel-edit').forEach((btn) => {
       btn.addEventListener('click', () => {
         this.editingId = null;
         this.render();
@@ -2948,41 +3050,38 @@ class DeploymentModal {
     });
 
     // Button Delete Row
-    this.modalOverlay.querySelectorAll('.btn-delete-row').forEach((btn) => {
+    this.modalOverlay.querySelectorAll('.wan-btn-delete-row').forEach((btn) => {
       btn.addEventListener('click', async () => {
         const id = (btn               ).dataset.id;
         if (!id) return;
 
-        const items = BaocaoStore.getItems();
+        const items = ProjectReportStore.getItems('wan', this.activeSheet);
         const itemToDelete = items.find((i) => i.id === id);
 
         const confirmMsg = itemToDelete
-          ? `Bạn có chắc chắn muốn xóa dòng báo cáo này khỏi wan.xlsx?\n\n• Thời gian: ${itemToDelete.time}\n• Nội dung: ${itemToDelete.content}\n• Trạng thái: ${itemToDelete.status}`
-          : 'Bạn có chắc chắn muốn xóa dòng báo cáo này khỏi wan.xlsx?';
+          ? `Bạn có chắc chắn muốn xóa dòng báo cáo này khỏi sheet [${this.activeSheet}] của wan.xlsx?\n\n• Thời gian: ${itemToDelete.time}\n• Nội dung: ${itemToDelete.content}\n• Trạng thái: ${itemToDelete.status}`
+          : `Bạn có chắc chắn muốn xóa dòng báo cáo này khỏi sheet [${this.activeSheet}] của wan.xlsx?`;
 
         if (confirm(confirmMsg)) {
-          // 1. Xóa khỏi kho dữ liệu BaocaoStore
-          BaocaoStore.deleteItem(id);
-
-          // 2. Đồng bộ cập nhật xóa hàng tương ứng trong file wan.xlsx
-          await this.syncBaocaoToFile();
-
-          // 3. Render lại bảng hiển thị
+          ProjectReportStore.deleteItem('wan', this.activeSheet, id);
+          if (this.activeSheet === 'ge2pmb') {
+            await this.syncBaocaoToFile();
+          }
           this.render();
-          this.showNotice('Đã xóa hàng tương ứng trong wan.xlsx');
+          this.showNotice(`Đã xóa hàng trong sheet [${this.activeSheet}] của wan.xlsx`);
         }
       });
     });
 
-    // Button Download Excel baocao.xlsx
-    this.modalOverlay.querySelector('#btn-download-baocao')?.addEventListener('click', () => {
+    // Button Download Excel wan.xlsx
+    this.modalOverlay.querySelector('#wan-btn-download-excel')?.addEventListener('click', () => {
       this.downloadExcelFile();
     });
   }
 
-  // Đồng bộ cập nhật toàn bộ danh sách sang file baocao.xlsx với xác thực an toàn
+  // Đồng bộ cập nhật ge2pmb sang server nếu có
           async syncBaocaoToFile()                {
-    const items = BaocaoStore.getItems();
+    const items = ProjectReportStore.getItems('wan', 'ge2pmb');
     const token = AuthManager.getAuthToken();
     try {
       await fetch('/api/baocao', {
@@ -3018,11 +3117,16 @@ class DeploymentModal {
     }, 2500);
   }
 
-  // Generate and download actual baocao.xlsx
+  // Generate and download actual wan.xlsx with all sheets
           downloadExcelFile()       {
-    const items = BaocaoStore.getItems();
+    const sanitizeExcelCell = (val        ) => {
+      let text = val || '';
+      if (/^[=+\-@]/.test(text)) {
+        text = "'" + text;
+      }
+      return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    };
 
-    // Construct XML Spreadsheet 2003 which Excel opens natively without any third-party zip library
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <?mso-application progid="Excel.Sheet"?>
 <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
@@ -3033,7 +3137,7 @@ class DeploymentModal {
  <Styles>
   <Style ss:ID="Header">
    <Font ss:Bold="1" ss:Color="#FFFFFF" ss:FontName="Calibri" ss:Size="11"/>
-   <Interior ss:Color="#29348F" ss:Pattern="Solid"/>
+   <Interior ss:Color="#16A34A" ss:Pattern="Solid"/>
    <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
    <Borders>
     <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#000000"/>
@@ -3052,8 +3156,12 @@ class DeploymentModal {
     <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/>
    </Borders>
   </Style>
- </Styles>
- <Worksheet ss:Name="ge2pmb">
+ </Styles>`;
+
+    for (const sheet of this.sheets) {
+      const items = ProjectReportStore.getItems('wan', sheet.id);
+      xml += `
+ <Worksheet ss:Name="${escapeWanHtml(sheet.id)}">
   <Table>
    <Column ss:Width="130"/>
    <Column ss:Width="380"/>
@@ -3064,27 +3172,21 @@ class DeploymentModal {
     <Cell ss:StyleID="Header"><Data ss:Type="String">status</Data></Cell>
    </Row>`;
 
-    items.forEach((item) => {
-      const sanitizeExcelCell = (val        ) => {
-        let text = val || '';
-        // Phòng chống CSV / Excel Formula Injection (nếu chuỗi bắt đầu bằng =, +, -, @)
-        if (/^[=+\-@]/.test(text)) {
-          text = "'" + text;
-        }
-        return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-      };
-
-      xml += `
+      items.forEach((item) => {
+        xml += `
    <Row ss:Height="22">
     <Cell ss:StyleID="Time"><Data ss:Type="String">${sanitizeExcelCell(item.time)}</Data></Cell>
     <Cell ss:StyleID="Data"><Data ss:Type="String">${sanitizeExcelCell(item.content)}</Data></Cell>
     <Cell ss:StyleID="Data"><Data ss:Type="String">${sanitizeExcelCell(item.status)}</Data></Cell>
    </Row>`;
-    });
+      });
+
+      xml += `
+  </Table>
+ </Worksheet>`;
+    }
 
     xml += `
-  </Table>
- </Worksheet>
 </Workbook>`;
 
     const blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8' });
@@ -3100,10 +3202,1072 @@ class DeploymentModal {
     }, 100);
   }
 }
+const DeploymentModal = WanReport;
 
+
+// --- src/ui/atttReport.ts ---
+
+
+function escapeAtttHtml(str     )         {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+class AtttReport {
+          container             ;
+          modalOverlay                     = null;
+          isAddingRow          = false;
+          editingId                = null;
+          activeSheet         = 'thacmo';
+                   sheets                       = ATTT_SHEETS;
+
+  constructor(container             ) {
+    this.container = container;
+  }
+
+         async open()                {
+    if (!this.modalOverlay) {
+      this.modalOverlay = document.createElement('div');
+      this.modalOverlay.className = 'wan-deploy-overlay';
+      this.container.appendChild(this.modalOverlay);
+
+      // Listen for auth changes to re-render in real-time
+      window.addEventListener('wan:auth-changed', () => {
+        if (this.modalOverlay?.classList.contains('open')) {
+          this.render();
+        }
+      });
+    }
+
+    this.isAddingRow = false;
+    this.editingId = null;
+
+    // Tự động chọn sheet tương ứng theo đơn vị đăng nhập
+    const loggedUnit = AuthManager.getLoggedInUnit();
+    this.activeSheet = getSheetForLoggedInUnit(loggedUnit, this.sheets);
+
+    this.render();
+
+    requestAnimationFrame(() => {
+      this.modalOverlay?.classList.add('open');
+    });
+  }
+
+         close()       {
+    if (this.modalOverlay) {
+      this.modalOverlay.classList.remove('open');
+      setTimeout(() => {
+        this.modalOverlay?.remove();
+        this.modalOverlay = null;
+      }, 200);
+    }
+  }
+
+          getFormattedCurrentTime()         {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${d}/${m}/${y}`;
+  }
+
+          render()       {
+    if (!this.modalOverlay) return;
+
+    const items = ProjectReportStore.getItems('attt', this.activeSheet);
+    const isAuthed = AuthManager.isAuthenticated();
+
+    let tableRowsHtml = '';
+
+    // If currently adding a row, render the inline form at the top
+    if (this.isAddingRow && isAuthed) {
+      const defaultTime = this.getFormattedCurrentTime();
+      tableRowsHtml += `
+        <tr class="wan-deploy-row-edit adding-new">
+          <td class="wan-dp-col-stt">Mới</td>
+          <td class="wan-dp-col-time">
+            <input id="attt-input-new-time" type="text" class="wan-dp-input" value="${defaultTime}" placeholder="dd/mm/yyyy" />
+          </td>
+          <td class="wan-dp-col-content">
+            <textarea id="attt-input-new-content" class="wan-dp-textarea" placeholder="Nhập nội dung triển khai an toàn thông tin..." rows="1" autofocus></textarea>
+          </td>
+          <td class="wan-dp-col-status">
+            <select id="attt-select-new-status" class="wan-dp-select">
+              <option value="Đang thực hiện">Đang thực hiện</option>
+              <option value="Hoàn thành">Hoàn thành</option>
+              <option value="Chờ xử lý">Chờ xử lý</option>
+              <option value="Kế hoạch">Kế hoạch</option>
+            </select>
+          </td>
+          <td class="wan-dp-col-action">
+            <button id="attt-btn-save-new-row" class="wan-dp-btn save" title="Lưu hàng mới">Lưu</button>
+            <button id="attt-btn-cancel-new-row" class="wan-dp-btn cancel" title="Hủy bỏ">Hủy</button>
+          </td>
+        </tr>
+      `;
+    }
+
+    if (items.length === 0 && !this.isAddingRow) {
+      tableRowsHtml = `
+        <tr>
+          <td colspan="${isAuthed ? 5 : 4}" class="wan-deploy-empty">Chưa có báo cáo triển khai thực tế nào trong sheet [${escapeAtttHtml(this.activeSheet)}].</td>
+        </tr>
+      `;
+    } else {
+      items.forEach((item, idx) => {
+        const isEditing = this.editingId === item.id && isAuthed;
+
+        if (isEditing) {
+          tableRowsHtml += `
+            <tr class="wan-deploy-row-edit" data-id="${item.id}">
+              <td class="wan-dp-col-stt">${idx + 1}</td>
+              <td class="wan-dp-col-time">
+                <input id="attt-edit-time-${item.id}" type="text" class="wan-dp-input" value="${escapeAtttHtml(item.time)}" placeholder="dd/mm/yyyy" />
+              </td>
+              <td class="wan-dp-col-content">
+                <textarea id="attt-edit-content-${item.id}" class="wan-dp-textarea" placeholder="Nhập nội dung triển khai..." rows="1">${escapeAtttHtml(item.content)}</textarea>
+              </td>
+              <td class="wan-dp-col-status">
+                <select id="attt-edit-status-${item.id}" class="wan-dp-select">
+                  <option value="Đang thực hiện" ${item.status === 'Đang thực hiện' ? 'selected' : ''}>Đang thực hiện</option>
+                  <option value="Hoàn thành" ${item.status === 'Hoàn thành' ? 'selected' : ''}>Hoàn thành</option>
+                  <option value="Chờ xử lý" ${item.status === 'Chờ xử lý' ? 'selected' : ''}>Chờ xử lý</option>
+                  <option value="Kế hoạch" ${item.status === 'Kế hoạch' ? 'selected' : ''}>Kế hoạch</option>
+                </select>
+              </td>
+              <td class="wan-dp-col-action">
+                <button class="wan-dp-btn save attt-btn-save-edit" data-id="${item.id}" title="Lưu chỉnh sửa">Lưu</button>
+                <button class="wan-dp-btn cancel attt-btn-cancel-edit" data-id="${item.id}" title="Hủy bỏ">Hủy</button>
+              </td>
+            </tr>
+          `;
+        } else {
+          const statusClass = item.status === 'Hoàn thành' ? 'badge-success' : 'badge-warning';
+          tableRowsHtml += `
+            <tr class="wan-deploy-row" data-id="${item.id}">
+              <td class="wan-dp-col-stt">${idx + 1}</td>
+              <td class="wan-dp-col-time"><strong>${escapeAtttHtml(item.time)}</strong></td>
+              <td class="wan-dp-col-content">${escapeAtttHtml(item.content)}</td>
+              <td class="wan-dp-col-status">
+                <span class="wan-status-badge ${statusClass}">${escapeAtttHtml(item.status)}</span>
+              </td>
+              ${
+                isAuthed
+                  ? `
+                <td class="wan-dp-col-action">
+                  <button class="wan-dp-action-icon attt-btn-edit-row" data-id="${item.id}" title="Chỉnh sửa hàng">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M12 20h9"/>
+                      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                    </svg>
+                  </button>
+                  <button class="wan-dp-action-icon danger attt-btn-delete-row" data-id="${item.id}" title="Xóa hàng">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="3 6 5 6 21 6"/>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                  </button>
+                </td>
+              `
+                  : ''
+              }
+            </tr>
+          `;
+        }
+      });
+    }
+
+    // Sheet tabs bar
+    const sheetTabsHtml = this.sheets
+      .map(
+        (s) => `
+      <button class="wan-deploy-sheet-tab wan-tab-theme-orange ${s.id === this.activeSheet ? 'active' : ''}" data-sheet="${s.id}">
+        ${escapeAtttHtml(s.name)}
+      </button>
+    `
+      )
+      .join('');
+
+    this.modalOverlay.innerHTML = `
+      <div class="wan-deploy-modal" role="dialog" aria-modal="true" aria-labelledby="attt-deploy-modal-title">
+        <!-- Header -->
+        <div class="wan-deploy-header">
+          <div class="wan-deploy-title-group">
+            <div class="wan-deploy-badge" style="background:#ea580c;">AN TOÀN AN NINH THÔNG TIN</div>
+            <div>
+              <h3 id="attt-deploy-modal-title">Báo cáo tiến độ thực tế - Dự án An toàn an ninh thông tin</h3>
+            </div>
+          </div>
+
+          <div class="wan-deploy-header-actions">
+            ${
+              isAuthed
+                ? `
+              <div class="wan-deploy-role-pill authed" title="Đã đăng nhập: ${escapeAtttHtml(AuthManager.getLoggedInUnit())}">
+                <span class="wan-deploy-dot" style="background:#ea580c;"></span>
+                <span>${escapeAtttHtml(AuthManager.getLoggedInUnit())}</span>
+              </div>
+              <button id="attt-btn-add-deploy-row" class="wan-btn-deploy primary" style="background:#ea580c;" ${this.isAddingRow ? 'disabled' : ''}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span>Thêm</span>
+              </button>
+            `
+                : `
+              <div class="wan-deploy-role-pill readonly" title="Chưa xác thực đăng nhập">
+                <span>Chế độ chỉ xem</span>
+              </div>
+            `
+            }
+            <button id="attt-btn-download-excel" class="wan-btn-deploy secondary" title="Tải file attt.xlsx gồm tất cả các sheet">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              <span>Xuất attt.xlsx</span>
+            </button>
+            <button id="attt-btn-close-modal" class="wan-deploy-close-btn" title="Đóng bảng">&times;</button>
+          </div>
+        </div>
+
+        <!-- Sheet Selector Tabs -->
+        <div class="wan-deploy-sheet-bar">
+          <span class="wan-sheet-label">Sheet / Đơn vị:</span>
+          ${sheetTabsHtml}
+        </div>
+
+        <!-- Table Viewport -->
+        <div class="wan-deploy-table-wrapper">
+          <table class="wan-deploy-table">
+            <thead>
+              <tr>
+                <th class="wan-dp-col-stt">STT</th>
+                <th class="wan-dp-col-time">Thời gian</th>
+                <th class="wan-dp-col-content">Nội dung</th>
+                <th class="wan-dp-col-status">Tình trạng</th>
+                ${isAuthed ? '<th class="wan-dp-col-action">Thao tác</th>' : ''}
+              </tr>
+            </thead>
+            <tbody>
+              ${tableRowsHtml}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    this.bindEvents();
+  }
+
+          bindEvents()       {
+    if (!this.modalOverlay) return;
+
+    // Close on backdrop click
+    this.modalOverlay.addEventListener('click', (e) => {
+      if (e.target === this.modalOverlay) {
+        this.close();
+      }
+    });
+
+    // Close button
+    this.modalOverlay.querySelector('#attt-btn-close-modal')?.addEventListener('click', () => {
+      this.close();
+    });
+
+    // Close on Escape key
+    const onKeyDown = (e               ) => {
+      if (e.key === 'Escape') {
+        this.close();
+        window.removeEventListener('keydown', onKeyDown);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+
+    // Switch sheet tab
+    this.modalOverlay.querySelectorAll('.wan-deploy-sheet-tab').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        const sheet = (tab               ).dataset.sheet;
+        if (sheet && sheet !== this.activeSheet) {
+          this.activeSheet = sheet;
+          this.isAddingRow = false;
+          this.editingId = null;
+          this.render();
+        }
+      });
+    });
+
+    // Tự động điều chỉnh chiều cao cho textarea
+    this.modalOverlay.querySelectorAll                     ('.wan-dp-textarea').forEach((ta) => {
+      const resize = () => {
+        ta.style.height = 'auto';
+        ta.style.height = `${Math.max(34, ta.scrollHeight)}px`;
+      };
+      ta.addEventListener('input', resize);
+      requestAnimationFrame(resize);
+    });
+
+    // Button "+ Thêm"
+    this.modalOverlay.querySelector('#attt-btn-add-deploy-row')?.addEventListener('click', () => {
+      if (!AuthManager.isAuthenticated()) return;
+      this.isAddingRow = true;
+      this.editingId = null;
+      this.render();
+      setTimeout(() => {
+        const ta = this.modalOverlay?.querySelector('#attt-input-new-content')                              ;
+        ta?.focus();
+      }, 50);
+    });
+
+    // Button Save New Row
+    this.modalOverlay.querySelector('#attt-btn-save-new-row')?.addEventListener('click', () => {
+      const timeInput = this.modalOverlay?.querySelector('#attt-input-new-time')                           ;
+      const contentInput = this.modalOverlay?.querySelector('#attt-input-new-content')                                                 ;
+      const statusSelect = this.modalOverlay?.querySelector('#attt-select-new-status')                            ;
+
+      if (!contentInput || !contentInput.value.trim()) {
+        contentInput?.focus();
+        return;
+      }
+
+      const timeVal = timeInput?.value.trim() || this.getFormattedCurrentTime();
+      const contentVal = contentInput.value.trim();
+      const statusVal = statusSelect?.value || 'Đang thực hiện';
+
+      ProjectReportStore.addItem('attt', this.activeSheet, {
+        time: timeVal,
+        content: contentVal,
+        status: statusVal,
+      });
+
+      this.isAddingRow = false;
+      this.render();
+      this.showNotice(`Đã thêm dòng mới vào sheet [${this.activeSheet}] của attt.xlsx`);
+    });
+
+    // Button Cancel New Row
+    this.modalOverlay.querySelector('#attt-btn-cancel-new-row')?.addEventListener('click', () => {
+      this.isAddingRow = false;
+      this.render();
+    });
+
+    // Button Edit Row
+    this.modalOverlay.querySelectorAll('.attt-btn-edit-row').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = (btn               ).dataset.id;
+        if (id) {
+          this.editingId = id;
+          this.isAddingRow = false;
+          this.render();
+        }
+      });
+    });
+
+    // Button Save Edit Row
+    this.modalOverlay.querySelectorAll('.attt-btn-save-edit').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = (btn               ).dataset.id;
+        if (!id) return;
+
+        const timeInput = this.modalOverlay?.querySelector(`#attt-edit-time-${id}`)                           ;
+        const contentInput = this.modalOverlay?.querySelector(`#attt-edit-content-${id}`)                                                 ;
+        const statusSelect = this.modalOverlay?.querySelector(`#attt-edit-status-${id}`)                            ;
+
+        if (!contentInput || !contentInput.value.trim()) {
+          contentInput?.focus();
+          return;
+        }
+
+        ProjectReportStore.updateItem('attt', this.activeSheet, id, {
+          time: timeInput?.value.trim() || this.getFormattedCurrentTime(),
+          content: contentInput.value.trim(),
+          status: statusSelect?.value || 'Đang thực hiện',
+        });
+
+        this.editingId = null;
+        this.render();
+        this.showNotice(`Đã cập nhật hàng trong sheet [${this.activeSheet}] của attt.xlsx`);
+      });
+    });
+
+    // Button Cancel Edit Row
+    this.modalOverlay.querySelectorAll('.attt-btn-cancel-edit').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        this.editingId = null;
+        this.render();
+      });
+    });
+
+    // Button Delete Row
+    this.modalOverlay.querySelectorAll('.attt-btn-delete-row').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = (btn               ).dataset.id;
+        if (!id) return;
+
+        const items = ProjectReportStore.getItems('attt', this.activeSheet);
+        const itemToDelete = items.find((i) => i.id === id);
+
+        const confirmMsg = itemToDelete
+          ? `Bạn có chắc chắn muốn xóa dòng báo cáo này khỏi sheet [${this.activeSheet}] của attt.xlsx?\n\n• Thời gian: ${itemToDelete.time}\n• Nội dung: ${itemToDelete.content}\n• Trạng thái: ${itemToDelete.status}`
+          : `Bạn có chắc chắn muốn xóa dòng báo cáo này khỏi sheet [${this.activeSheet}] của attt.xlsx?`;
+
+        if (confirm(confirmMsg)) {
+          ProjectReportStore.deleteItem('attt', this.activeSheet, id);
+          this.render();
+          this.showNotice(`Đã xóa hàng trong sheet [${this.activeSheet}] của attt.xlsx`);
+        }
+      });
+    });
+
+    // Button Download Excel attt.xlsx
+    this.modalOverlay.querySelector('#attt-btn-download-excel')?.addEventListener('click', () => {
+      this.downloadExcelFile();
+    });
+  }
+
+  // Hiển thị thông báo toast nhanh cho người dùng
+          showNotice(message        )       {
+    const existing = document.querySelector('.wan-deploy-toast');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.className = 'wan-deploy-toast';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    requestAnimationFrame(() => {
+      toast.classList.add('show');
+    });
+
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 250);
+    }, 2500);
+  }
+
+  // Generate and download actual attt.xlsx with all sheets
+          downloadExcelFile()       {
+    const sanitizeExcelCell = (val        ) => {
+      let text = val || '';
+      if (/^[=+\-@]/.test(text)) {
+        text = "'" + text;
+      }
+      return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    };
+
+    let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:html="http://www.w3.org/TR/REC-html40">
+ <Styles>
+  <Style ss:ID="Header">
+   <Font ss:Bold="1" ss:Color="#FFFFFF" ss:FontName="Calibri" ss:Size="11"/>
+   <Interior ss:Color="#EA580C" ss:Pattern="Solid"/>
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#000000"/>
+   </Borders>
+  </Style>
+  <Style ss:ID="Data">
+   <Font ss:FontName="Calibri" ss:Size="11"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/>
+   </Borders>
+  </Style>
+  <Style ss:ID="Time">
+   <Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1"/>
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/>
+   </Borders>
+  </Style>
+ </Styles>`;
+
+    for (const sheet of this.sheets) {
+      const items = ProjectReportStore.getItems('attt', sheet.id);
+      xml += `
+ <Worksheet ss:Name="${escapeAtttHtml(sheet.id)}">
+  <Table>
+   <Column ss:Width="130"/>
+   <Column ss:Width="380"/>
+   <Column ss:Width="120"/>
+   <Row ss:Height="26">
+    <Cell ss:StyleID="Header"><Data ss:Type="String">time</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">content</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">status</Data></Cell>
+   </Row>`;
+
+      items.forEach((item) => {
+        xml += `
+   <Row ss:Height="22">
+    <Cell ss:StyleID="Time"><Data ss:Type="String">${sanitizeExcelCell(item.time)}</Data></Cell>
+    <Cell ss:StyleID="Data"><Data ss:Type="String">${sanitizeExcelCell(item.content)}</Data></Cell>
+    <Cell ss:StyleID="Data"><Data ss:Type="String">${sanitizeExcelCell(item.status)}</Data></Cell>
+   </Row>`;
+      });
+
+      xml += `
+  </Table>
+ </Worksheet>`;
+    }
+
+    xml += `
+</Workbook>`;
+
+    const blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'attt.xlsx';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      a.remove();
+      URL.revokeObjectURL(url);
+    }, 100);
+  }
+}
+
+
+// --- src/ui/rmccReport.ts ---
+
+
+function escapeRmccHtml(str     )         {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+class RmccReport {
+          container             ;
+          modalOverlay                     = null;
+          isAddingRow          = false;
+          editingId                = null;
+          activeSheet         = 'thacmo';
+                   sheets                       = RMCC_SHEETS;
+
+  constructor(container             ) {
+    this.container = container;
+  }
+
+         async open()                {
+    if (!this.modalOverlay) {
+      this.modalOverlay = document.createElement('div');
+      this.modalOverlay.className = 'wan-deploy-overlay';
+      this.container.appendChild(this.modalOverlay);
+
+      // Listen for auth changes to re-render in real-time
+      window.addEventListener('wan:auth-changed', () => {
+        if (this.modalOverlay?.classList.contains('open')) {
+          this.render();
+        }
+      });
+    }
+
+    this.isAddingRow = false;
+    this.editingId = null;
+
+    // Tự động chọn sheet tương ứng theo đơn vị đăng nhập
+    const loggedUnit = AuthManager.getLoggedInUnit();
+    this.activeSheet = getSheetForLoggedInUnit(loggedUnit, this.sheets);
+
+    this.render();
+
+    requestAnimationFrame(() => {
+      this.modalOverlay?.classList.add('open');
+    });
+  }
+
+         close()       {
+    if (this.modalOverlay) {
+      this.modalOverlay.classList.remove('open');
+      setTimeout(() => {
+        this.modalOverlay?.remove();
+        this.modalOverlay = null;
+      }, 200);
+    }
+  }
+
+          getFormattedCurrentTime()         {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${d}/${m}/${y}`;
+  }
+
+          render()       {
+    if (!this.modalOverlay) return;
+
+    const items = ProjectReportStore.getItems('rmcc', this.activeSheet);
+    const isAuthed = AuthManager.isAuthenticated();
+
+    let tableRowsHtml = '';
+
+    // If currently adding a row, render the inline form at the top
+    if (this.isAddingRow && isAuthed) {
+      const defaultTime = this.getFormattedCurrentTime();
+      tableRowsHtml += `
+        <tr class="wan-deploy-row-edit adding-new">
+          <td class="wan-dp-col-stt">Mới</td>
+          <td class="wan-dp-col-time">
+            <input id="rmcc-input-new-time" type="text" class="wan-dp-input" value="${defaultTime}" placeholder="dd/mm/yyyy" />
+          </td>
+          <td class="wan-dp-col-content">
+            <textarea id="rmcc-input-new-content" class="wan-dp-textarea" placeholder="Nhập nội dung triển khai RMCC..." rows="1" autofocus></textarea>
+          </td>
+          <td class="wan-dp-col-status">
+            <select id="rmcc-select-new-status" class="wan-dp-select">
+              <option value="Đang thực hiện">Đang thực hiện</option>
+              <option value="Hoàn thành">Hoàn thành</option>
+              <option value="Chờ xử lý">Chờ xử lý</option>
+              <option value="Kế hoạch">Kế hoạch</option>
+            </select>
+          </td>
+          <td class="wan-dp-col-action">
+            <button id="rmcc-btn-save-new-row" class="wan-dp-btn save" title="Lưu hàng mới">Lưu</button>
+            <button id="rmcc-btn-cancel-new-row" class="wan-dp-btn cancel" title="Hủy bỏ">Hủy</button>
+          </td>
+        </tr>
+      `;
+    }
+
+    if (items.length === 0 && !this.isAddingRow) {
+      tableRowsHtml = `
+        <tr>
+          <td colspan="${isAuthed ? 5 : 4}" class="wan-deploy-empty">Chưa có báo cáo triển khai thực tế nào trong sheet [${escapeRmccHtml(this.activeSheet)}].</td>
+        </tr>
+      `;
+    } else {
+      items.forEach((item, idx) => {
+        const isEditing = this.editingId === item.id && isAuthed;
+
+        if (isEditing) {
+          tableRowsHtml += `
+            <tr class="wan-deploy-row-edit" data-id="${item.id}">
+              <td class="wan-dp-col-stt">${idx + 1}</td>
+              <td class="wan-dp-col-time">
+                <input id="rmcc-edit-time-${item.id}" type="text" class="wan-dp-input" value="${escapeRmccHtml(item.time)}" placeholder="dd/mm/yyyy" />
+              </td>
+              <td class="wan-dp-col-content">
+                <textarea id="rmcc-edit-content-${item.id}" class="wan-dp-textarea" placeholder="Nhập nội dung triển khai..." rows="1">${escapeRmccHtml(item.content)}</textarea>
+              </td>
+              <td class="wan-dp-col-status">
+                <select id="rmcc-edit-status-${item.id}" class="wan-dp-select">
+                  <option value="Đang thực hiện" ${item.status === 'Đang thực hiện' ? 'selected' : ''}>Đang thực hiện</option>
+                  <option value="Hoàn thành" ${item.status === 'Hoàn thành' ? 'selected' : ''}>Hoàn thành</option>
+                  <option value="Chờ xử lý" ${item.status === 'Chờ xử lý' ? 'selected' : ''}>Chờ xử lý</option>
+                  <option value="Kế hoạch" ${item.status === 'Kế hoạch' ? 'selected' : ''}>Kế hoạch</option>
+                </select>
+              </td>
+              <td class="wan-dp-col-action">
+                <button class="wan-dp-btn save rmcc-btn-save-edit" data-id="${item.id}" title="Lưu chỉnh sửa">Lưu</button>
+                <button class="wan-dp-btn cancel rmcc-btn-cancel-edit" data-id="${item.id}" title="Hủy bỏ">Hủy</button>
+              </td>
+            </tr>
+          `;
+        } else {
+          const statusClass = item.status === 'Hoàn thành' ? 'badge-success' : 'badge-warning';
+          tableRowsHtml += `
+            <tr class="wan-deploy-row" data-id="${item.id}">
+              <td class="wan-dp-col-stt">${idx + 1}</td>
+              <td class="wan-dp-col-time"><strong>${escapeRmccHtml(item.time)}</strong></td>
+              <td class="wan-dp-col-content">${escapeRmccHtml(item.content)}</td>
+              <td class="wan-dp-col-status">
+                <span class="wan-status-badge ${statusClass}">${escapeRmccHtml(item.status)}</span>
+              </td>
+              ${
+                isAuthed
+                  ? `
+                <td class="wan-dp-col-action">
+                  <button class="wan-dp-action-icon rmcc-btn-edit-row" data-id="${item.id}" title="Chỉnh sửa hàng">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M12 20h9"/>
+                      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                    </svg>
+                  </button>
+                  <button class="wan-dp-action-icon danger rmcc-btn-delete-row" data-id="${item.id}" title="Xóa hàng">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="3 6 5 6 21 6"/>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                  </button>
+                </td>
+              `
+                  : ''
+              }
+            </tr>
+          `;
+        }
+      });
+    }
+
+    // Sheet tabs bar
+    const sheetTabsHtml = this.sheets
+      .map(
+        (s) => `
+      <button class="wan-deploy-sheet-tab wan-tab-theme-blue ${s.id === this.activeSheet ? 'active' : ''}" data-sheet="${s.id}">
+        ${escapeRmccHtml(s.name)}
+      </button>
+    `
+      )
+      .join('');
+
+    this.modalOverlay.innerHTML = `
+      <div class="wan-deploy-modal" role="dialog" aria-modal="true" aria-labelledby="rmcc-deploy-modal-title">
+        <!-- Header -->
+        <div class="wan-deploy-header">
+          <div class="wan-deploy-title-group">
+            <div class="wan-deploy-badge" style="background:#2563eb;">TRUNG TÂM RMCC</div>
+            <div>
+              <h3 id="rmcc-deploy-modal-title">Báo cáo tiến độ thực tế - Dự án Trung tâm RMCC</h3>
+            </div>
+          </div>
+
+          <div class="wan-deploy-header-actions">
+            ${
+              isAuthed
+                ? `
+              <div class="wan-deploy-role-pill authed" title="Đã đăng nhập: ${escapeRmccHtml(AuthManager.getLoggedInUnit())}">
+                <span class="wan-deploy-dot" style="background:#38bdf8;"></span>
+                <span>${escapeRmccHtml(AuthManager.getLoggedInUnit())}</span>
+              </div>
+              <button id="rmcc-btn-add-deploy-row" class="wan-btn-deploy primary" style="background:#2563eb;" ${this.isAddingRow ? 'disabled' : ''}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span>Thêm</span>
+              </button>
+            `
+                : `
+              <div class="wan-deploy-role-pill readonly" title="Chưa xác thực đăng nhập">
+                <span>Chế độ chỉ xem</span>
+              </div>
+            `
+            }
+            <button id="rmcc-btn-download-excel" class="wan-btn-deploy secondary" title="Tải file rmcc.xlsx gồm tất cả các sheet">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              <span>Xuất rmcc.xlsx</span>
+            </button>
+            <button id="rmcc-btn-close-modal" class="wan-deploy-close-btn" title="Đóng bảng">&times;</button>
+          </div>
+        </div>
+
+        <!-- Sheet Selector Tabs -->
+        <div class="wan-deploy-sheet-bar">
+          <span class="wan-sheet-label">Sheet / Đơn vị:</span>
+          ${sheetTabsHtml}
+        </div>
+
+        <!-- Table Viewport -->
+        <div class="wan-deploy-table-wrapper">
+          <table class="wan-deploy-table">
+            <thead>
+              <tr>
+                <th class="wan-dp-col-stt">STT</th>
+                <th class="wan-dp-col-time">Thời gian</th>
+                <th class="wan-dp-col-content">Nội dung</th>
+                <th class="wan-dp-col-status">Tình trạng</th>
+                ${isAuthed ? '<th class="wan-dp-col-action">Thao tác</th>' : ''}
+              </tr>
+            </thead>
+            <tbody>
+              ${tableRowsHtml}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    this.bindEvents();
+  }
+
+          bindEvents()       {
+    if (!this.modalOverlay) return;
+
+    // Close on backdrop click
+    this.modalOverlay.addEventListener('click', (e) => {
+      if (e.target === this.modalOverlay) {
+        this.close();
+      }
+    });
+
+    // Close button
+    this.modalOverlay.querySelector('#rmcc-btn-close-modal')?.addEventListener('click', () => {
+      this.close();
+    });
+
+    // Close on Escape key
+    const onKeyDown = (e               ) => {
+      if (e.key === 'Escape') {
+        this.close();
+        window.removeEventListener('keydown', onKeyDown);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+
+    // Switch sheet tab
+    this.modalOverlay.querySelectorAll('.wan-deploy-sheet-tab').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        const sheet = (tab               ).dataset.sheet;
+        if (sheet && sheet !== this.activeSheet) {
+          this.activeSheet = sheet;
+          this.isAddingRow = false;
+          this.editingId = null;
+          this.render();
+        }
+      });
+    });
+
+    // Tự động điều chỉnh chiều cao cho textarea
+    this.modalOverlay.querySelectorAll                     ('.wan-dp-textarea').forEach((ta) => {
+      const resize = () => {
+        ta.style.height = 'auto';
+        ta.style.height = `${Math.max(34, ta.scrollHeight)}px`;
+      };
+      ta.addEventListener('input', resize);
+      requestAnimationFrame(resize);
+    });
+
+    // Button "+ Thêm"
+    this.modalOverlay.querySelector('#rmcc-btn-add-deploy-row')?.addEventListener('click', () => {
+      if (!AuthManager.isAuthenticated()) return;
+      this.isAddingRow = true;
+      this.editingId = null;
+      this.render();
+      setTimeout(() => {
+        const ta = this.modalOverlay?.querySelector('#rmcc-input-new-content')                              ;
+        ta?.focus();
+      }, 50);
+    });
+
+    // Button Save New Row
+    this.modalOverlay.querySelector('#rmcc-btn-save-new-row')?.addEventListener('click', () => {
+      const timeInput = this.modalOverlay?.querySelector('#rmcc-input-new-time')                           ;
+      const contentInput = this.modalOverlay?.querySelector('#rmcc-input-new-content')                                                 ;
+      const statusSelect = this.modalOverlay?.querySelector('#rmcc-select-new-status')                            ;
+
+      if (!contentInput || !contentInput.value.trim()) {
+        contentInput?.focus();
+        return;
+      }
+
+      const timeVal = timeInput?.value.trim() || this.getFormattedCurrentTime();
+      const contentVal = contentInput.value.trim();
+      const statusVal = statusSelect?.value || 'Đang thực hiện';
+
+      ProjectReportStore.addItem('rmcc', this.activeSheet, {
+        time: timeVal,
+        content: contentVal,
+        status: statusVal,
+      });
+
+      this.isAddingRow = false;
+      this.render();
+      this.showNotice(`Đã thêm dòng mới vào sheet [${this.activeSheet}] của rmcc.xlsx`);
+    });
+
+    // Button Cancel New Row
+    this.modalOverlay.querySelector('#rmcc-btn-cancel-new-row')?.addEventListener('click', () => {
+      this.isAddingRow = false;
+      this.render();
+    });
+
+    // Button Edit Row
+    this.modalOverlay.querySelectorAll('.rmcc-btn-edit-row').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = (btn               ).dataset.id;
+        if (id) {
+          this.editingId = id;
+          this.isAddingRow = false;
+          this.render();
+        }
+      });
+    });
+
+    // Button Save Edit Row
+    this.modalOverlay.querySelectorAll('.rmcc-btn-save-edit').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = (btn               ).dataset.id;
+        if (!id) return;
+
+        const timeInput = this.modalOverlay?.querySelector(`#rmcc-edit-time-${id}`)                           ;
+        const contentInput = this.modalOverlay?.querySelector(`#rmcc-edit-content-${id}`)                                                 ;
+        const statusSelect = this.modalOverlay?.querySelector(`#rmcc-edit-status-${id}`)                            ;
+
+        if (!contentInput || !contentInput.value.trim()) {
+          contentInput?.focus();
+          return;
+        }
+
+        ProjectReportStore.updateItem('rmcc', this.activeSheet, id, {
+          time: timeInput?.value.trim() || this.getFormattedCurrentTime(),
+          content: contentInput.value.trim(),
+          status: statusSelect?.value || 'Đang thực hiện',
+        });
+
+        this.editingId = null;
+        this.render();
+        this.showNotice(`Đã cập nhật hàng trong sheet [${this.activeSheet}] của rmcc.xlsx`);
+      });
+    });
+
+    // Button Cancel Edit Row
+    this.modalOverlay.querySelectorAll('.rmcc-btn-cancel-edit').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        this.editingId = null;
+        this.render();
+      });
+    });
+
+    // Button Delete Row
+    this.modalOverlay.querySelectorAll('.rmcc-btn-delete-row').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = (btn               ).dataset.id;
+        if (!id) return;
+
+        const items = ProjectReportStore.getItems('rmcc', this.activeSheet);
+        const itemToDelete = items.find((i) => i.id === id);
+
+        const confirmMsg = itemToDelete
+          ? `Bạn có chắc chắn muốn xóa dòng báo cáo này khỏi sheet [${this.activeSheet}] của rmcc.xlsx?\n\n• Thời gian: ${itemToDelete.time}\n• Nội dung: ${itemToDelete.content}\n• Trạng thái: ${itemToDelete.status}`
+          : `Bạn có chắc chắn muốn xóa dòng báo cáo này khỏi sheet [${this.activeSheet}] của rmcc.xlsx?`;
+
+        if (confirm(confirmMsg)) {
+          ProjectReportStore.deleteItem('rmcc', this.activeSheet, id);
+          this.render();
+          this.showNotice(`Đã xóa hàng trong sheet [${this.activeSheet}] của rmcc.xlsx`);
+        }
+      });
+    });
+
+    // Button Download Excel rmcc.xlsx
+    this.modalOverlay.querySelector('#rmcc-btn-download-excel')?.addEventListener('click', () => {
+      this.downloadExcelFile();
+    });
+  }
+
+  // Hiển thị thông báo toast nhanh cho người dùng
+          showNotice(message        )       {
+    const existing = document.querySelector('.wan-deploy-toast');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.className = 'wan-deploy-toast';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    requestAnimationFrame(() => {
+      toast.classList.add('show');
+    });
+
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 250);
+    }, 2500);
+  }
+
+  // Generate and download actual rmcc.xlsx with all sheets
+          downloadExcelFile()       {
+    const sanitizeExcelCell = (val        ) => {
+      let text = val || '';
+      if (/^[=+\-@]/.test(text)) {
+        text = "'" + text;
+      }
+      return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    };
+
+    let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:html="http://www.w3.org/TR/REC-html40">
+ <Styles>
+  <Style ss:ID="Header">
+   <Font ss:Bold="1" ss:Color="#FFFFFF" ss:FontName="Calibri" ss:Size="11"/>
+   <Interior ss:Color="#2563EB" ss:Pattern="Solid"/>
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#000000"/>
+   </Borders>
+  </Style>
+  <Style ss:ID="Data">
+   <Font ss:FontName="Calibri" ss:Size="11"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/>
+   </Borders>
+  </Style>
+  <Style ss:ID="Time">
+   <Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1"/>
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/>
+   </Borders>
+  </Style>
+ </Styles>`;
+
+    for (const sheet of this.sheets) {
+      const items = ProjectReportStore.getItems('rmcc', sheet.id);
+      xml += `
+ <Worksheet ss:Name="${escapeRmccHtml(sheet.id)}">
+  <Table>
+   <Column ss:Width="130"/>
+   <Column ss:Width="380"/>
+   <Column ss:Width="120"/>
+   <Row ss:Height="26">
+    <Cell ss:StyleID="Header"><Data ss:Type="String">time</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">content</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">status</Data></Cell>
+   </Row>`;
+
+      items.forEach((item) => {
+        xml += `
+   <Row ss:Height="22">
+    <Cell ss:StyleID="Time"><Data ss:Type="String">${sanitizeExcelCell(item.time)}</Data></Cell>
+    <Cell ss:StyleID="Data"><Data ss:Type="String">${sanitizeExcelCell(item.content)}</Data></Cell>
+    <Cell ss:StyleID="Data"><Data ss:Type="String">${sanitizeExcelCell(item.status)}</Data></Cell>
+   </Row>`;
+      });
+
+      xml += `
+  </Table>
+ </Worksheet>`;
+    }
+
+    xml += `
+</Workbook>`;
+
+    const blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'rmcc.xlsx';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      a.remove();
+      URL.revokeObjectURL(url);
+    }, 100);
+  }
+}
 
 
 // --- src/ui/app.ts ---
+
+
 
 
 
@@ -3252,7 +4416,9 @@ class WanApp {
 
           selectedId                = null;
           ganttModal             ;
-          deploymentModal                  ;
+          wanReport            ;
+          atttReport             ;
+          rmccReport             ;
           bangThongModal                 ;
           authWidget             ;
 
@@ -3406,7 +4572,9 @@ class WanApp {
          mount()       {
     this.renderShell();
     this.ganttModal = new GanttModal(this.container);
-    this.deploymentModal = new DeploymentModal(this.container);
+    this.wanReport = new WanReport(this.container);
+    this.atttReport = new AtttReport(this.container);
+    this.rmccReport = new RmccReport(this.container);
     this.bangThongModal = new BangThongModal(this.container);
     this.authWidget = new AuthWidget(this.container);
     this.authWidget.mount();
@@ -3748,19 +4916,19 @@ class WanApp {
         if (subnav === 'progress-tier3') {
           this.ganttModal.open('BQLDA');
         } else if (subnav === 'deployment') {
-          this.deploymentModal.open();
+          this.wanReport.open();
         } else if (subnav === 'discussion') {
           this.showToast('Kênh góp ý thảo luận dự án mạng WAN đang mở.');
         } else if (subnav === 'atantt-progress') {
           this.showToast('Dự án An toàn an ninh thông tin: Bảng tiến độ đang được BQLDA đồng bộ.');
         } else if (subnav === 'atantt-deployment') {
-          this.showToast('Dự án An toàn an ninh thông tin: Dữ liệu triển khai thực tế đang được cập nhật.');
+          this.atttReport.open();
         } else if (subnav === 'atantt-discussion') {
           this.showToast('Kênh góp ý thảo luận dự án An toàn an ninh thông tin.');
         } else if (subnav === 'rmcc-progress') {
           this.showToast('Dự án Trung tâm RMCC: Bảng tiến độ đang được BQLDA đồng bộ.');
         } else if (subnav === 'rmcc-deployment') {
-          this.showToast('Dự án Trung tâm RMCC: Dữ liệu triển khai thực tế đang được cập nhật.');
+          this.rmccReport.open();
         } else if (subnav === 'rmcc-discussion') {
           this.showToast('Kênh góp ý thảo luận dự án Trung tâm RMCC.');
         }

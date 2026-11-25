@@ -14,7 +14,9 @@ import {
 } from '../data/wanElements.ts';
 import { buildDiagramSvg } from '../renderer/svgDiagram.ts';
 import { GanttModal } from './ganttModal.ts';
-import { DeploymentModal } from './deploymentModal.ts';
+import { WanReport } from './wanReport.ts';
+import { AtttReport } from './atttReport.ts';
+import { RmccReport } from './rmccReport.ts';
 import { BangThongModal } from './bangthongModal.ts';
 import { AuthWidget, AuthManager } from './authWidget.ts';
 
@@ -161,7 +163,9 @@ export class WanApp {
 
   private selectedId: string | null = null;
   private ganttModal!: GanttModal;
-  private deploymentModal!: DeploymentModal;
+  private wanReport!: WanReport;
+  private atttReport!: AtttReport;
+  private rmccReport!: RmccReport;
   private bangThongModal!: BangThongModal;
   private authWidget!: AuthWidget;
 
@@ -315,7 +319,9 @@ export class WanApp {
   public mount(): void {
     this.renderShell();
     this.ganttModal = new GanttModal(this.container);
-    this.deploymentModal = new DeploymentModal(this.container);
+    this.wanReport = new WanReport(this.container);
+    this.atttReport = new AtttReport(this.container);
+    this.rmccReport = new RmccReport(this.container);
     this.bangThongModal = new BangThongModal(this.container);
     this.authWidget = new AuthWidget(this.container);
     this.authWidget.mount();
@@ -657,19 +663,19 @@ export class WanApp {
         if (subnav === 'progress-tier3') {
           this.ganttModal.open('BQLDA');
         } else if (subnav === 'deployment') {
-          this.deploymentModal.open();
+          this.wanReport.open();
         } else if (subnav === 'discussion') {
           this.showToast('Kênh góp ý thảo luận dự án mạng WAN đang mở.');
         } else if (subnav === 'atantt-progress') {
           this.showToast('Dự án An toàn an ninh thông tin: Bảng tiến độ đang được BQLDA đồng bộ.');
         } else if (subnav === 'atantt-deployment') {
-          this.showToast('Dự án An toàn an ninh thông tin: Dữ liệu triển khai thực tế đang được cập nhật.');
+          this.atttReport.open();
         } else if (subnav === 'atantt-discussion') {
           this.showToast('Kênh góp ý thảo luận dự án An toàn an ninh thông tin.');
         } else if (subnav === 'rmcc-progress') {
           this.showToast('Dự án Trung tâm RMCC: Bảng tiến độ đang được BQLDA đồng bộ.');
         } else if (subnav === 'rmcc-deployment') {
-          this.showToast('Dự án Trung tâm RMCC: Dữ liệu triển khai thực tế đang được cập nhật.');
+          this.rmccReport.open();
         } else if (subnav === 'rmcc-discussion') {
           this.showToast('Kênh góp ý thảo luận dự án Trung tâm RMCC.');
         }
