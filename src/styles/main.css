@@ -3705,8 +3705,8 @@ body,
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #2563eb;
-  background: #2563eb;
+  background-color: #ffffff;
+  background: #ffffff;
   overflow: hidden;
   font-family: inherit;
 }
@@ -3728,8 +3728,8 @@ body,
   background: #ffffff;
   border-radius: 16px;
   padding: 32px 30px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.12);
-  border: 1px solid #e2e8f0;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.08), 0 0 0 1px #e2e8f0;
+  border: 1px solid #cbd5e1;
   animation: wanFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 

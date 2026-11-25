@@ -5316,7 +5316,7 @@ class LoginView {
     const isLocked = lockSec > 0;
 
     this.container.innerHTML = `
-      <div class="wan-login-screen">
+      <div class="wan-login-screen" style="background-color: #ffffff; background: #ffffff;">
         <div class="wan-login-card">
           <!-- Logo & Brand Header -->
           <div class="wan-login-brand">
