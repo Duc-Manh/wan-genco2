@@ -119,7 +119,7 @@ export class LoginView {
             <div class="wan-login-logo-wrap">
               <img src="./assets/logo.png" alt="EVNGENCO2 Logo" class="wan-login-logo" />
             </div>
-            <h1 class="wan-login-title">HỆ THỐNG GIÁM SÁT MẠNG TRUYỀN DẪN WAN</h1>
+            <h1 class="wan-login-title">HỆ THỐNG GIÁM SÁT TIẾN ĐỘ CÁC DỰ ÁN CNTT</h1>
             <div class="wan-login-subtitle">TỔNG CÔNG TY PHÁT ĐIỆN 2 - EVNGENCO2</div>
             <div class="wan-login-badge-secure">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
