@@ -153,7 +153,7 @@ export default async function handler(req, res) {
         timestamp: new Date().toISOString(),
       });
     }
-    return res.status(200).json({ success: true, message: 'Đã xóa hàng trong baocao.xlsx', items: sortItemsDescending(inMemoryItems) });
+    return res.status(200).json({ success: true, message: 'Đã xóa hàng trong wan.xlsx', items: sortItemsDescending(inMemoryItems) });
   }
 
   return res.status(405).json({ error: 'Method not allowed' });

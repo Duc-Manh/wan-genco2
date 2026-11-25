@@ -125,7 +125,7 @@ function saveBaocaoAndSyncXlsx(items: any[], callback?: () => void) {
       'python3',
       [path.join(ROOT_DIR, 'scripts', 'generate_baocao.py'), '--json', JSON.stringify(sorted)],
       (err) => {
-        if (err) console.error('Error updating baocao.xlsx:', err);
+        if (err) console.error('Error updating wan.xlsx:', err);
         if (callback) callback();
       }
     );
@@ -344,7 +344,7 @@ const server = http.createServer((req, res) => {
           }
           saveBaocaoAndSyncXlsx(items, () => {
             res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ success: true, message: 'Đã xóa hàng trong baocao.xlsx', items }));
+            res.end(JSON.stringify({ success: true, message: 'Đã xóa hàng trong wan.xlsx', items }));
           });
         } catch {
           res.writeHead(400, { 'Content-Type': 'application/json' });

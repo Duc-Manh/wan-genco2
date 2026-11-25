@@ -2739,7 +2739,7 @@ class DeploymentModal {
                       <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
                     </svg>
                   </button>
-                  <button class="wan-dp-action-icon danger btn-delete-row" data-id="${item.id}" title="Xóa hàng trong baocao.xlsx">
+                  <button class="wan-dp-action-icon danger btn-delete-row" data-id="${item.id}" title="Xóa hàng trong wan.xlsx">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <polyline points="3 6 5 6 21 6"/>
                       <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
@@ -2785,13 +2785,13 @@ class DeploymentModal {
               </div>
             `
             }
-            <button id="btn-download-baocao" class="wan-btn-deploy secondary" title="Tải file baocao.xlsx">
+            <button id="btn-download-baocao" class="wan-btn-deploy secondary" title="Tải file wan.xlsx">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="7 10 12 15 17 10"/>
                 <line x1="12" y1="15" x2="12" y2="3"/>
               </svg>
-              <span>Xuất baocao.xlsx</span>
+              <span>Xuất wan.xlsx</span>
             </button>
             <button id="btn-close-deploy-modal" class="wan-deploy-close-btn" title="Đóng bảng">&times;</button>
           </div>
@@ -2890,7 +2890,7 @@ class DeploymentModal {
       this.isAddingRow = false;
       this.render();
       await this.syncBaocaoToFile();
-      this.showNotice('Đã thêm dòng mới vào baocao.xlsx');
+      this.showNotice('Đã thêm dòng mới vào wan.xlsx');
     });
 
     // Button Cancel New Row
@@ -2935,7 +2935,7 @@ class DeploymentModal {
         this.editingId = null;
         this.render();
         await this.syncBaocaoToFile();
-        this.showNotice('Đã cập nhật hàng trong baocao.xlsx');
+        this.showNotice('Đã cập nhật hàng trong wan.xlsx');
       });
     });
 
@@ -2957,19 +2957,19 @@ class DeploymentModal {
         const itemToDelete = items.find((i) => i.id === id);
 
         const confirmMsg = itemToDelete
-          ? `Bạn có chắc chắn muốn xóa dòng báo cáo này khỏi baocao.xlsx?\n\n• Thời gian: ${itemToDelete.time}\n• Nội dung: ${itemToDelete.content}\n• Trạng thái: ${itemToDelete.status}`
-          : 'Bạn có chắc chắn muốn xóa dòng báo cáo này khỏi baocao.xlsx?';
+          ? `Bạn có chắc chắn muốn xóa dòng báo cáo này khỏi wan.xlsx?\n\n• Thời gian: ${itemToDelete.time}\n• Nội dung: ${itemToDelete.content}\n• Trạng thái: ${itemToDelete.status}`
+          : 'Bạn có chắc chắn muốn xóa dòng báo cáo này khỏi wan.xlsx?';
 
         if (confirm(confirmMsg)) {
           // 1. Xóa khỏi kho dữ liệu BaocaoStore
           BaocaoStore.deleteItem(id);
 
-          // 2. Đồng bộ cập nhật xóa hàng tương ứng trong file baocao.xlsx
+          // 2. Đồng bộ cập nhật xóa hàng tương ứng trong file wan.xlsx
           await this.syncBaocaoToFile();
 
           // 3. Render lại bảng hiển thị
           this.render();
-          this.showNotice('Đã xóa hàng tương ứng trong baocao.xlsx');
+          this.showNotice('Đã xóa hàng tương ứng trong wan.xlsx');
         }
       });
     });
@@ -3053,7 +3053,7 @@ class DeploymentModal {
    </Borders>
   </Style>
  </Styles>
- <Worksheet ss:Name="TrienKhaiThucTe">
+ <Worksheet ss:Name="ge2pmb">
   <Table>
    <Column ss:Width="130"/>
    <Column ss:Width="380"/>
@@ -3091,7 +3091,7 @@ class DeploymentModal {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'baocao.xlsx';
+    a.download = 'wan.xlsx';
     document.body.appendChild(a);
     a.click();
     setTimeout(() => {

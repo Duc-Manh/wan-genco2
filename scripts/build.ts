@@ -75,14 +75,10 @@ if (fs.existsSync(path.join(ROOT_DIR, 'data'))) {
 if (fs.existsSync(path.join(ROOT_DIR, 'assets'))) {
   fs.cpSync(path.join(ROOT_DIR, 'assets'), path.join(DIST_DIR, 'assets'), { recursive: true });
 }
-if (fs.existsSync(path.join(ROOT_DIR, 'baocao.xlsx'))) {
-  fs.copyFileSync(path.join(ROOT_DIR, 'baocao.xlsx'), path.join(DIST_DIR, 'baocao.xlsx'));
-}
-if (fs.existsSync(path.join(ROOT_DIR, 'infor.xlsx'))) {
-  fs.copyFileSync(path.join(ROOT_DIR, 'infor.xlsx'), path.join(DIST_DIR, 'infor.xlsx'));
-}
-if (fs.existsSync(path.join(ROOT_DIR, 'bangthong.xlsx'))) {
-  fs.copyFileSync(path.join(ROOT_DIR, 'bangthong.xlsx'), path.join(DIST_DIR, 'bangthong.xlsx'));
+for (const xlsxName of ['wan.xlsx', 'attt.xlsx', 'rmcc.xlsx', 'baocao.xlsx', 'infor.xlsx', 'bangthong.xlsx']) {
+  if (fs.existsSync(path.join(ROOT_DIR, xlsxName))) {
+    fs.copyFileSync(path.join(ROOT_DIR, xlsxName), path.join(DIST_DIR, xlsxName));
+  }
 }
 if (fs.existsSync(path.join(ROOT_DIR, 'favicon.ico'))) {
   fs.copyFileSync(path.join(ROOT_DIR, 'favicon.ico'), path.join(DIST_DIR, 'favicon.ico'));
