@@ -15,12 +15,11 @@ const SERVER_SECRET = process.env.WAN_SERVER_SECRET || 'evngenco2-wan-sec-2026-a
 
 // Brute-force protection
 const attemptTracker = new Map();
-const MAX_ATTEMPTS = 5;
-const LOCKOUT_TIME_MS = 60 * 1000;
+const MAX_ATTEMPTS = 3;
+const LOCKOUT_TIME_MS = 5 * 60 * 1000;
 
 function verifyToken(token: string): boolean {
   if (!token || typeof token !== 'string') return false;
-  if (token.startsWith('off-')) return true;
   try {
     const parts = token.split('.');
     if (parts.length !== 3) return false;
@@ -33,6 +32,7 @@ function verifyToken(token: string): boolean {
       .update(`${payloadB64}.${expiresAtStr}`)
       .digest('hex');
 
+    if (sig.length !== expectedSig.length) return false;
     return crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expectedSig));
   } catch {
     return false;
@@ -177,23 +177,28 @@ const server = http.createServer((req, res) => {
           const tracker = attemptTracker.get(clientIp) || { count: 0, lockedUntil: 0 };
           if (Date.now() < tracker.lockedUntil) {
             const waitSec = Math.ceil((tracker.lockedUntil - Date.now()) / 1000);
+            const waitMin = Math.ceil(waitSec / 60);
             res.writeHead(429, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: `Quá nhiều lần thử sai. Vui lòng đợi ${waitSec} giây.`, locked: true }));
+            res.end(JSON.stringify({
+              error: `Tài khoản bị tạm khóa do nhập sai quá 3 lần liên tiếp. Vui lòng đợi ${waitSec} giây (~${waitMin} phút) trước khi thử lại.`,
+              locked: true,
+              waitSeconds: waitSec,
+            }));
             return;
           }
 
           const { code } = JSON.parse(body || '{}');
           const inputHash = crypto.createHash('sha256').update(String(code || '').trim()).digest('hex');
 
-          if (crypto.timingSafeEqual(Buffer.from(inputHash), Buffer.from(ADMIN_HASH))) {
+          if (inputHash.length === ADMIN_HASH.length && crypto.timingSafeEqual(Buffer.from(inputHash), Buffer.from(ADMIN_HASH))) {
             attemptTracker.delete(clientIp);
             const expiresAt = Date.now() + 8 * 3600 * 1000;
-            const payloadB64 = Buffer.from(JSON.stringify({ role: 'admin', ip: clientIp })).toString('base64url');
+            const payloadB64 = Buffer.from(JSON.stringify({ role: 'admin', ip: clientIp, loginTime: Date.now() })).toString('base64url');
             const sig = crypto.createHmac('sha256', SERVER_SECRET).update(`${payloadB64}.${expiresAt}`).digest('hex');
             const token = `${payloadB64}.${expiresAt}.${sig}`;
 
             res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ success: true, token, expiresAt }));
+            res.end(JSON.stringify({ success: true, token, expiresAt, message: 'Xác thực thành công quyền Quản trị viên' }));
           } else {
             tracker.count = (tracker.count || 0) + 1;
             if (tracker.count >= MAX_ATTEMPTS) {
@@ -201,11 +206,21 @@ const server = http.createServer((req, res) => {
             }
             attemptTracker.set(clientIp, tracker);
             const remaining = Math.max(0, MAX_ATTEMPTS - tracker.count);
-            res.writeHead(401, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({
-              error: remaining > 0 ? `Mã đăng nhập không chính xác! (Còn ${remaining} lần thử)` : 'Tài khoản bị tạm khóa 60 giây do nhập sai nhiều lần.',
-              remainingAttempts: remaining,
-            }));
+            if (remaining === 0) {
+              res.writeHead(429, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({
+                error: 'Bạn đã nhập mã xác thực sai 3 lần liên tiếp. Hệ thống tạm khóa đăng nhập trong 5 phút để bảo vệ tài khoản.',
+                locked: true,
+                remainingAttempts: 0,
+                waitSeconds: 300,
+              }));
+            } else {
+              res.writeHead(401, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({
+                error: `Mã xác thực không chính xác! (Còn ${remaining} lần thử trước khi bị khóa 5 phút)`,
+                remainingAttempts: remaining,
+              }));
+            }
           }
         } catch {
           res.writeHead(400, { 'Content-Type': 'application/json' });

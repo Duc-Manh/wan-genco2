@@ -147,6 +147,7 @@ export class WanApp {
   private activeSidebarTab: 'legend' | 'stations' | 'stats' = 'legend';
   private sidebarCollapsed = false;
   private activeRegion: RegionId = 'all';
+  private activeProjectGroup: 'wan' | 'atantt' | 'rmcc' = 'wan';
   private stationTypeFilter: string = 'ALL';
   private stationSearchQuery: string = '';
   private globalSearchQuery: string = '';
@@ -411,14 +412,51 @@ export class WanApp {
           </button>
         </nav>
 
-        <!-- Sub Navigation Bar -->
+        <!-- Sub Navigation Bar (3 Nhóm Dự Án) -->
         <nav class="wan-subnav-bar" id="wan-subnav-bar">
-          <span class="wan-hint-text">Cuộn chuột để Phóng to/Thu nhỏ • Kéo chuột để Di chuyển • Nhấn vào Thiết bị/Tuyến cáp để xem và sửa</span>
+          <!-- 3 Nhóm dự án Tabs -->
+          <div class="wan-project-groups" id="wan-project-groups">
+            <button class="wan-project-tab active" data-project="wan" title="Nhóm dự án mạng WAN EVNGENCO2">
+              <span class="wan-project-dot"></span> Dự án WAN
+            </button>
+            <button class="wan-project-tab" data-project="atantt" title="Nhóm dự án An toàn an ninh thông tin EVNGENCO2">
+              <span class="wan-project-dot"></span> Dự án An toàn an ninh thông tin
+            </button>
+            <button class="wan-project-tab" data-project="rmcc" title="Nhóm dự án Trung tâm RMCC EVNGENCO2">
+              <span class="wan-project-dot"></span> Dự án Trung tâm RMCC
+            </button>
+          </div>
+
           <div class="wan-subnav-spacer"></div>
-          <div class="wan-subnav-group">
-            <button class="wan-subnav-item active" data-subnav="progress-tier3">Bảng tiến độ</button>
-            <button class="wan-subnav-item" data-subnav="deployment">Triển khai thực tế</button>
-            <button class="wan-subnav-item" data-subnav="discussion">Góp ý thảo luận</button>
+
+          <!-- Nội dung nhóm 1: Dự án WAN -->
+          <div class="wan-project-pane" id="pane-project-wan">
+            <span class="wan-hint-text">Cuộn chuột để Phóng to/Thu nhỏ • Kéo chuột để Di chuyển • Nhấn vào Thiết bị/Tuyến cáp để xem và sửa</span>
+            <div class="wan-subnav-group">
+              <button class="wan-subnav-item active" data-subnav="progress-tier3">Bảng tiến độ</button>
+              <button class="wan-subnav-item" data-subnav="deployment">Triển khai thực tế</button>
+              <button class="wan-subnav-item" data-subnav="discussion">Góp ý thảo luận</button>
+            </div>
+          </div>
+
+          <!-- Nội dung nhóm 2: Dự án An toàn an ninh thông tin -->
+          <div class="wan-project-pane" id="pane-project-atantt" style="display: none;">
+            <span class="wan-hint-text">Dự án An toàn an ninh thông tin EVNGENCO2</span>
+            <div class="wan-subnav-group">
+              <button class="wan-subnav-item active" data-subnav="atantt-progress">Bảng tiến độ</button>
+              <button class="wan-subnav-item" data-subnav="atantt-deployment">Triển khai thực tế</button>
+              <button class="wan-subnav-item" data-subnav="atantt-discussion">Góp ý thảo luận</button>
+            </div>
+          </div>
+
+          <!-- Nội dung nhóm 3: Dự án Trung tâm RMCC -->
+          <div class="wan-project-pane" id="pane-project-rmcc" style="display: none;">
+            <span class="wan-hint-text">Dự án Trung tâm RMCC EVNGENCO2</span>
+            <div class="wan-subnav-group">
+              <button class="wan-subnav-item active" data-subnav="rmcc-progress">Bảng tiến độ</button>
+              <button class="wan-subnav-item" data-subnav="rmcc-deployment">Triển khai thực tế</button>
+              <button class="wan-subnav-item" data-subnav="rmcc-discussion">Góp ý thảo luận</button>
+            </div>
           </div>
         </nav>
 
@@ -582,16 +620,58 @@ export class WanApp {
       this.bangThongModal.open();
     });
 
-    // Subnav items (Bảng tiến độ, Triển khai thực tế, Góp ý thảo luận)
+    // Nhóm dự án Tabs (WAN, An toàn an ninh thông tin, Trung tâm RMCC)
+    const projectTabs = this.container.querySelectorAll('.wan-project-tab');
+    projectTabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        const proj = (tab as HTMLElement).dataset.project as 'wan' | 'atantt' | 'rmcc';
+        if (!proj) return;
+        this.activeProjectGroup = proj;
+        projectTabs.forEach((t) => t.classList.toggle('active', t === tab));
+
+        // Hiện pane tương ứng và ẩn các pane khác
+        const panes = this.container.querySelectorAll('.wan-project-pane');
+        panes.forEach((pane) => {
+          const isTarget = pane.id === `pane-project-${proj}`;
+          (pane as HTMLElement).style.display = isTarget ? 'flex' : 'none';
+        });
+
+        if (proj === 'atantt') {
+          this.showToast('Đang xem: Nhóm dự án An toàn an ninh thông tin');
+        } else if (proj === 'rmcc') {
+          this.showToast('Đang xem: Nhóm dự án Trung tâm RMCC');
+        } else {
+          this.showToast('Đang xem: Nhóm dự án mạng WAN');
+        }
+      });
+    });
+
+    // Subnav items (Bảng tiến độ, Triển khai thực tế, Góp ý thảo luận cho từng nhóm dự án)
     const subnavItems = this.container.querySelectorAll('.wan-subnav-item');
     subnavItems.forEach((btn) => {
       btn.addEventListener('click', () => {
-        subnavItems.forEach((b) => b.classList.toggle('active', b === btn));
+        const parentGroup = btn.closest('.wan-subnav-group');
+        parentGroup?.querySelectorAll('.wan-subnav-item').forEach((b) => b.classList.toggle('active', b === btn));
+
         const subnav = (btn as HTMLElement).dataset.subnav;
         if (subnav === 'progress-tier3') {
           this.ganttModal.open('BQLDA');
         } else if (subnav === 'deployment') {
           this.deploymentModal.open();
+        } else if (subnav === 'discussion') {
+          this.showToast('Kênh góp ý thảo luận dự án mạng WAN đang mở.');
+        } else if (subnav === 'atantt-progress') {
+          this.showToast('Dự án An toàn an ninh thông tin: Bảng tiến độ đang được BQLDA đồng bộ.');
+        } else if (subnav === 'atantt-deployment') {
+          this.showToast('Dự án An toàn an ninh thông tin: Dữ liệu triển khai thực tế đang được cập nhật.');
+        } else if (subnav === 'atantt-discussion') {
+          this.showToast('Kênh góp ý thảo luận dự án An toàn an ninh thông tin.');
+        } else if (subnav === 'rmcc-progress') {
+          this.showToast('Dự án Trung tâm RMCC: Bảng tiến độ đang được BQLDA đồng bộ.');
+        } else if (subnav === 'rmcc-deployment') {
+          this.showToast('Dự án Trung tâm RMCC: Dữ liệu triển khai thực tế đang được cập nhật.');
+        } else if (subnav === 'rmcc-discussion') {
+          this.showToast('Kênh góp ý thảo luận dự án Trung tâm RMCC.');
         }
       });
     });
