@@ -124,6 +124,22 @@ export function getSheetForLoggedInUnit(unitName: string, allowedSheets: Project
   return allowedSheets[0]?.id || 'thacmo';
 }
 
+export function isUnitMatchingSheet(unitName: string, sheetId: string): boolean {
+  if (!unitName) return false;
+  // Tài khoản Tổng công ty Phát điện 2 là cấp điều hành cao nhất, quản lý toàn bộ các mục
+  if (unitName === 'Tổng công ty Phát điện 2') return true;
+  const mapping: Record<string, string> = {
+    'Ban Quản lý dự án EVNGENCO2': 'ge2pmb',
+    'Công ty CP Thuỷ điện Thác Mơ': 'thacmo',
+    'Công ty CP Thuỷ điện A Vương': 'avuong',
+    'Công ty CP Thuỷ điện Sông Ba Hạ': 'songbaha',
+    'Công ty CP NĐ Phả Lại': 'phalai',
+    'Công ty CP NĐ Hải Phòng': 'haiphong',
+    'Công ty TNHH MTV Thuỷ điện Trung Sơn': 'trungson',
+  };
+  return mapping[unitName] === sheetId;
+}
+
 export class ProjectReportStore {
   public static getStorageKey(projectId: string, sheetId: string): string {
     if (projectId === 'wan' && sheetId === 'ge2pmb') {

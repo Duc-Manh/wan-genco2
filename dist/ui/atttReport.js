@@ -1,5 +1,5 @@
                                                                             
-import { ProjectReportStore, ATTT_SHEETS, getSheetForLoggedInUnit } from '../data/baocaoData.js';
+import { ProjectReportStore, ATTT_SHEETS, getSheetForLoggedInUnit, isUnitMatchingSheet } from '../data/baocaoData.js';
 import { AuthManager } from './authWidget.js';
 
 function escapeAtttHtml(str     )         {
@@ -75,11 +75,13 @@ export class AtttReport {
 
     const items = ProjectReportStore.getItems('attt', this.activeSheet);
     const isAuthed = AuthManager.isAuthenticated();
+    const loggedUnit = AuthManager.getLoggedInUnit();
+    const canAdd = isAuthed && isUnitMatchingSheet(loggedUnit, this.activeSheet);
 
     let tableRowsHtml = '';
 
     // If currently adding a row, render the inline form at the top
-    if (this.isAddingRow && isAuthed) {
+    if (this.isAddingRow && canAdd) {
       const defaultTime = this.getFormattedCurrentTime();
       tableRowsHtml += `
         <tr class="wan-deploy-row-edit adding-new">
@@ -109,12 +111,12 @@ export class AtttReport {
     if (items.length === 0 && !this.isAddingRow) {
       tableRowsHtml = `
         <tr>
-          <td colspan="${isAuthed ? 5 : 4}" class="wan-deploy-empty">Chưa có báo cáo triển khai thực tế nào trong sheet [${escapeAtttHtml(this.activeSheet)}].</td>
+          <td colspan="${canAdd ? 5 : 4}" class="wan-deploy-empty">Chưa có báo cáo triển khai thực tế nào trong sheet [${escapeAtttHtml(this.activeSheet)}].</td>
         </tr>
       `;
     } else {
       items.forEach((item, idx) => {
-        const isEditing = this.editingId === item.id && isAuthed;
+        const isEditing = this.editingId === item.id && canAdd;
 
         if (isEditing) {
           tableRowsHtml += `
@@ -151,7 +153,7 @@ export class AtttReport {
                 <span class="wan-status-badge ${statusClass}">${escapeAtttHtml(item.status)}</span>
               </td>
               ${
-                isAuthed
+                canAdd
                   ? `
                 <td class="wan-dp-col-action">
                   <button class="wan-dp-action-icon attt-btn-edit-row" data-id="${item.id}" title="Chỉnh sửa hàng">
@@ -202,14 +204,20 @@ export class AtttReport {
             ${
               isAuthed
                 ? `
-              <div class="wan-deploy-role-pill authed" title="Đã đăng nhập: ${escapeAtttHtml(AuthManager.getLoggedInUnit())}">
+              <div class="wan-deploy-role-pill authed" title="Đã đăng nhập: ${escapeAtttHtml(loggedUnit)}">
                 <span class="wan-deploy-dot" style="background:#ea580c;"></span>
-                <span>${escapeAtttHtml(AuthManager.getLoggedInUnit())}</span>
+                <span>${escapeAtttHtml(loggedUnit)}</span>
               </div>
-              <button id="attt-btn-add-deploy-row" class="wan-btn-deploy primary" style="background:#ea580c;" ${this.isAddingRow ? 'disabled' : ''}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                <span>Thêm</span>
-              </button>
+              ${
+                canAdd
+                  ? `
+                <button id="attt-btn-add-deploy-row" class="wan-btn-deploy primary" style="background:#ea580c;" ${this.isAddingRow ? 'disabled' : ''}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  <span>Thêm</span>
+                </button>
+              `
+                  : ''
+              }
             `
                 : `
               <div class="wan-deploy-role-pill readonly" title="Chưa xác thực đăng nhập">
@@ -244,7 +252,7 @@ export class AtttReport {
                 <th class="wan-dp-col-time">Thời gian</th>
                 <th class="wan-dp-col-content">Nội dung</th>
                 <th class="wan-dp-col-status">Tình trạng</th>
-                ${isAuthed ? '<th class="wan-dp-col-action">Thao tác</th>' : ''}
+                ${canAdd ? '<th class="wan-dp-col-action">Thao tác</th>' : ''}
               </tr>
             </thead>
             <tbody>
@@ -307,7 +315,7 @@ export class AtttReport {
 
     // Button "+ Thêm"
     this.modalOverlay.querySelector('#attt-btn-add-deploy-row')?.addEventListener('click', () => {
-      if (!AuthManager.isAuthenticated()) return;
+      if (!AuthManager.isAuthenticated() || !isUnitMatchingSheet(AuthManager.getLoggedInUnit(), this.activeSheet)) return;
       this.isAddingRow = true;
       this.editingId = null;
       this.render();
