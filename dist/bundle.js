@@ -5190,6 +5190,44 @@ class WanApp {
           </div>
         </nav>
 
+        <!-- Hàng Danh mục Tài liệu & Hàng hoá thiết bị -->
+        <nav class="wan-extra-bar" id="wan-extra-bar">
+          <!-- Nhóm nút bên trái: Chủ trương đầu tư & Báo cáo nghiên cứu khả thi -->
+          <div class="wan-extra-group left">
+            <button class="wan-extra-btn" id="btn-chutruong-dautu" title="Chủ trương đầu tư">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+                <polyline points="10 9 9 9 8 9"/>
+              </svg>
+              <span>Chủ trương đầu tư</span>
+            </button>
+            <button class="wan-extra-btn" id="btn-baocao-nckh" title="Báo cáo nghiên cứu khả thi">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+              </svg>
+              <span>Báo cáo nghiên cứu khả thi</span>
+            </button>
+          </div>
+
+          <div class="wan-extra-spacer"></div>
+
+          <!-- Nhóm nút bên phải: Hàng hoá thiết bị -->
+          <div class="wan-extra-group right">
+            <button class="wan-extra-btn" id="btn-hanghoa-thietbi" title="Hàng hoá thiết bị">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                <line x1="12" y1="22.08" x2="12" y2="12"/>
+              </svg>
+              <span>Hàng hoá thiết bị</span>
+            </button>
+          </div>
+        </nav>
+
         <!-- Main Workspace Body -->
         <div class="wan-workspace">
           <!-- Left Sidebar -->
@@ -5404,6 +5442,17 @@ class WanApp {
           this.showToast('Kênh góp ý thảo luận dự án Trung tâm RMCC.');
         }
       });
+    });
+
+    // Các nút nhóm Chủ trương đầu tư, Báo cáo NCKH, Hàng hoá thiết bị
+    this.container.querySelector('#btn-chutruong-dautu')?.addEventListener('click', () => {
+      this.showToast('Chủ trương đầu tư: Đang cập nhật tài liệu dự án.');
+    });
+    this.container.querySelector('#btn-baocao-nckh')?.addEventListener('click', () => {
+      this.showToast('Báo cáo nghiên cứu khả thi: Đang cập nhật tài liệu dự án.');
+    });
+    this.container.querySelector('#btn-hanghoa-thietbi')?.addEventListener('click', () => {
+      this.showToast('Hàng hoá thiết bị: Đang cập nhật danh mục thiết bị dự án.');
     });
 
     // Zoom và View buttons
