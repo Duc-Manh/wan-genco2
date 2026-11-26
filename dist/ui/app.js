@@ -542,7 +542,10 @@ export class WanApp {
         <nav class="wan-extra-bar" id="wan-extra-bar">
           <!-- Nhóm 1: Dự án WAN (Màu xanh lục) -->
           <div class="wan-extra-pane" id="pane-extra-wan">
-            <div class="wan-extra-group left">
+            <div class="wan-extra-spacer"></div>
+
+            <!-- Nhóm nút bên phải: Chủ trương đầu tư, Báo cáo nghiên cứu khả thi, Hàng hoá thiết bị -->
+            <div class="wan-extra-group right">
               <button class="wan-extra-btn" id="btn-wan-chutruong" data-action="chutruong" data-project="wan" title="Chủ trương đầu tư - Dự án WAN">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -560,12 +563,6 @@ export class WanApp {
                 </svg>
                 <span>Báo cáo nghiên cứu khả thi</span>
               </button>
-            </div>
-
-            <div class="wan-extra-spacer"></div>
-
-            <!-- Nhóm nút bên phải: Hàng hoá thiết bị -->
-            <div class="wan-extra-group right">
               <button class="wan-extra-btn" id="btn-wan-hanghoa-thietbi" data-action="hanghoa" data-project="wan" title="Hàng hoá thiết bị - Dự án WAN">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
                   <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
@@ -579,7 +576,10 @@ export class WanApp {
 
           <!-- Nhóm 2: Dự án An toàn an ninh thông tin (Màu cam) -->
           <div class="wan-extra-pane" id="pane-extra-atantt" style="display: none;">
-            <div class="wan-extra-group left">
+            <div class="wan-extra-spacer"></div>
+
+            <!-- Nhóm nút bên phải: Chủ trương đầu tư, Báo cáo nghiên cứu khả thi, Hàng hoá thiết bị -->
+            <div class="wan-extra-group right">
               <button class="wan-extra-btn" id="btn-atantt-chutruong" data-action="chutruong" data-project="atantt" title="Chủ trương đầu tư - Dự án An toàn an ninh thông tin">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -597,12 +597,6 @@ export class WanApp {
                 </svg>
                 <span>Báo cáo nghiên cứu khả thi</span>
               </button>
-            </div>
-
-            <div class="wan-extra-spacer"></div>
-
-            <!-- Nhóm nút bên phải: Hàng hoá thiết bị -->
-            <div class="wan-extra-group right">
               <button class="wan-extra-btn" id="btn-atantt-hanghoa-thietbi" data-action="hanghoa" data-project="atantt" title="Hàng hoá thiết bị - Dự án An toàn an ninh thông tin">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
                   <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
@@ -616,7 +610,10 @@ export class WanApp {
 
           <!-- Nhóm 3: Dự án Trung tâm RMCC (Màu xanh dương) -->
           <div class="wan-extra-pane" id="pane-extra-rmcc" style="display: none;">
-            <div class="wan-extra-group left">
+            <div class="wan-extra-spacer"></div>
+
+            <!-- Nhóm nút bên phải: Chủ trương đầu tư, Báo cáo nghiên cứu khả thi, Hàng hoá thiết bị -->
+            <div class="wan-extra-group right">
               <button class="wan-extra-btn" id="btn-rmcc-chutruong" data-action="chutruong" data-project="rmcc" title="Chủ trương đầu tư - Dự án Trung tâm RMCC">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -634,12 +631,6 @@ export class WanApp {
                 </svg>
                 <span>Báo cáo nghiên cứu khả thi</span>
               </button>
-            </div>
-
-            <div class="wan-extra-spacer"></div>
-
-            <!-- Nhóm nút bên phải: Hàng hoá thiết bị -->
-            <div class="wan-extra-group right">
               <button class="wan-extra-btn" id="btn-rmcc-hanghoa-thietbi" data-action="hanghoa" data-project="rmcc" title="Hàng hoá thiết bị - Dự án Trung tâm RMCC">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
                   <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
