@@ -904,6 +904,13 @@ body,
   gap: 12px;
 }
 
+.wan-extra-pane {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 12px;
+}
+
 .wan-extra-group {
   display: flex;
   align-items: center;
@@ -932,46 +939,62 @@ body,
   transition: all 0.15s ease;
 }
 
-.wan-extra-btn:hover {
-  background: #f1f5f9;
-  color: #0f172a;
-  border-color: #94a3b8;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
 .wan-extra-btn:active {
   transform: translateY(1px);
 }
 
 .wan-extra-btn svg {
-  color: #64748b;
+  display: block;
   flex-shrink: 0;
   transition: color 0.15s ease;
 }
 
-.wan-extra-btn:hover svg {
-  color: #0284c7;
+/* 1. Nhóm Dự án WAN - Màu xanh lục (Green) */
+#pane-extra-wan .wan-extra-btn {
+  background: #16a34a !important;
+  color: #ffffff !important;
+  border-color: #15803d !important;
+  font-weight: 700;
+}
+#pane-extra-wan .wan-extra-btn svg {
+  color: #ffffff !important;
+}
+#pane-extra-wan .wan-extra-btn:hover {
+  background: #15803d !important;
+  border-color: #14532d !important;
+  box-shadow: 0 1px 4px rgba(21, 128, 61, 0.4);
 }
 
-.wan-extra-group.left .wan-extra-btn:hover {
-  border-color: #38bdf8;
-  color: #0369a1;
-  background: #f0f9ff;
+/* 2. Nhóm Dự án An toàn an ninh thông tin - Màu cam (Orange) */
+#pane-extra-atantt .wan-extra-btn {
+  background: #ea580c !important;
+  color: #ffffff !important;
+  border-color: #c2410c !important;
+  font-weight: 700;
+}
+#pane-extra-atantt .wan-extra-btn svg {
+  color: #ffffff !important;
+}
+#pane-extra-atantt .wan-extra-btn:hover {
+  background: #c2410c !important;
+  border-color: #9a3412 !important;
+  box-shadow: 0 1px 4px rgba(194, 65, 12, 0.4);
 }
 
-.wan-extra-group.right .wan-extra-btn {
-  background: #fafaf9;
-  border-color: #d6d3d1;
+/* 3. Nhóm Dự án Trung tâm RMCC - Màu xanh dương (Blue) */
+#pane-extra-rmcc .wan-extra-btn {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  border-color: #1d4ed8 !important;
+  font-weight: 700;
 }
-
-.wan-extra-group.right .wan-extra-btn:hover {
-  border-color: #f59e0b;
-  color: #b45309;
-  background: #fffbeb;
+#pane-extra-rmcc .wan-extra-btn svg {
+  color: #ffffff !important;
 }
-
-.wan-extra-group.right .wan-extra-btn:hover svg {
-  color: #d97706;
+#pane-extra-rmcc .wan-extra-btn:hover {
+  background: #1d4ed8 !important;
+  border-color: #1e40af !important;
+  box-shadow: 0 1px 4px rgba(29, 78, 216, 0.4);
 }
 
 /* Main Workspace */
