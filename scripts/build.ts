@@ -36,6 +36,7 @@ function buildStandaloneBundle(): void {
     'src/data/ganttData.ts',
     'src/data/bangthongData.ts',
     'src/data/baocaoData.ts',
+    'src/data/visitData.ts',
     'src/data/wanVertices1.ts',
     'src/data/wanVertices2.ts',
     'src/data/wanEdges.ts',

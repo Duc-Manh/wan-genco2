@@ -19,6 +19,7 @@ import { AtttReport } from './atttReport.js';
 import { RmccReport } from './rmccReport.js';
 import { BangThongModal } from './bangthongModal.js';
 import { AuthWidget, AuthManager } from './authWidget.js';
+import { VisitStore } from '../data/visitData.js';
 
 function escapeHtml(str     )         {
   if (str === null || str === undefined) return '';
@@ -309,6 +310,39 @@ export class WanApp {
     }
   }
 
+          initVisitStats()       {
+    this.updateVisitUI();
+
+    window.addEventListener('wan:visits-changed', () => {
+      this.updateVisitUI();
+    });
+
+    const wrapper = this.container.querySelector('#wan-visit-dropdown-wrapper');
+    wrapper?.addEventListener('mouseenter', () => {
+      this.updateVisitUI();
+    });
+
+    if (AuthManager.isAuthenticated()) {
+      const loggedUnit = AuthManager.getLoggedInUnit();
+      const sessionKey = `wan_session_visit_${loggedUnit}`;
+      if (!sessionStorage.getItem(sessionKey)) {
+        sessionStorage.setItem(sessionKey, '1');
+        VisitStore.recordVisit(loggedUnit);
+      }
+    }
+  }
+
+          updateVisitUI()       {
+    const popover = this.container.querySelector('#wan-visit-popover');
+    if (popover) {
+      popover.innerHTML = VisitStore.renderPopoverHtml();
+    }
+    const badge = this.container.querySelector('#visit-badge-today');
+    if (badge) {
+      badge.textContent = VisitStore.formatNumber(VisitStore.getTodayTotal());
+    }
+  }
+
           rebuildLookupMaps()       {
     this.vertexMap.clear();
     this.edgeMap.clear();
@@ -331,6 +365,7 @@ export class WanApp {
     this.renderSidebarContent();
     this.renderInspector();
     this.loadInforData();
+    this.initVisitStats();
 
     // Trên màn hình tablet/mobile, mặc định thu gọn sidebar để không che khuất sơ đồ
     if (window.innerWidth <= 860) {
@@ -416,6 +451,19 @@ export class WanApp {
           <button class="wan-region-pill wan-region-btn-bangthong" id="btn-open-bangthong" title="Xem bảng thông tin Băng thông dự án (bangthong.xlsx)">
             Băng thông dự án
           </button>
+          <div class="wan-visit-dropdown-wrapper" id="wan-visit-dropdown-wrapper">
+            <button class="wan-region-pill wan-region-btn-visits" id="btn-visit-stats" title="Xem thống kê lượt truy cập các đơn vị">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              <span>Lượt truy cập</span>
+              <span class="wan-visit-badge" id="visit-badge-today">0</span>
+            </button>
+            <div class="wan-visit-popover" id="wan-visit-popover">
+              ${VisitStore.renderPopoverHtml()}
+            </div>
+          </div>
         </nav>
 
         <!-- Sub Navigation Bar (3 Nhóm Dự Án) -->

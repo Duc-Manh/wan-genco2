@@ -1,4 +1,5 @@
 import { AuthManager, UNIT_CREDENTIALS } from './authWidget.js';
+import { VisitStore } from '../data/visitData.js';
 
 export const LOGIN_UNITS = [
   'Tổng công ty Phát điện 2',
@@ -324,6 +325,7 @@ export class LoginView {
       const res = await AuthManager.login(unit, pass);
 
       if (res.success) {
+        VisitStore.recordVisit(unit);
         this.stopCountdown();
         if (msgBox) {
           msgBox.className = 'wan-login-message success';

@@ -303,8 +303,9 @@ body,
   background: #ffffff;
   border-bottom: 1px solid var(--border-color);
   flex-shrink: 0;
-  overflow-x: auto;
-  z-index: 15;
+  overflow: visible;
+  z-index: 20;
+  position: relative;
 }
 
 .wan-region-title {
@@ -356,6 +357,287 @@ body,
   font-size: 11px;
   color: var(--text-muted);
   white-space: nowrap;
+}
+
+.wan-region-btn-bangthong {
+  background: #f0fdf4;
+  border-color: #86efac;
+  color: #166534;
+  font-weight: 700;
+}
+
+.wan-region-btn-bangthong:hover {
+  background: #dcfce7;
+  border-color: #22c55e;
+  color: #14532d;
+}
+
+/* Visit Stats Dropdown & Popover */
+.wan-visit-dropdown-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.wan-region-btn-visits {
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #1e293b;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.18s ease;
+}
+
+.wan-region-btn-visits:hover,
+.wan-visit-dropdown-wrapper:hover .wan-region-btn-visits {
+  background: #eff6ff;
+  border-color: #2563eb;
+  color: #1d4ed8;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.18);
+}
+
+.wan-visit-badge {
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 999px;
+  line-height: 1.2;
+}
+
+.wan-visit-dropdown-wrapper:hover .wan-visit-badge {
+  background: #1d4ed8;
+}
+
+.wan-visit-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 380px;
+  max-width: calc(100vw - 32px);
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.22), 0 3px 10px rgba(15, 23, 42, 0.08);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px);
+  transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+              visibility 0.22s;
+  pointer-events: none;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+/* Hover bridge so mouse can smoothly move into popover */
+.wan-visit-popover::before {
+  content: '';
+  position: absolute;
+  top: -12px;
+  left: 0;
+  right: 0;
+  height: 12px;
+}
+
+.wan-visit-dropdown-wrapper:hover .wan-visit-popover {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.wan-visit-popover-inner {
+  display: flex;
+  flex-direction: column;
+}
+
+.wan-visit-popover-header {
+  padding: 10px 14px;
+  background: #1e293b;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #334155;
+}
+
+.wan-visit-popover-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #f8fafc;
+}
+
+.wan-visit-live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 600;
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.wan-visit-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+  animation: wan-pulse-dot 1.8s infinite;
+}
+
+@keyframes wan-pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+.wan-visit-popover-body {
+  max-height: 480px;
+  overflow-y: auto;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.wan-visit-section {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.wan-visit-section-header {
+  margin-bottom: 2px;
+}
+
+.wan-visit-section-tag {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.wan-visit-section-tag.today {
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+}
+
+.wan-visit-section-tag.total {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+}
+
+.wan-visit-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  transition: background 0.1s;
+}
+
+.wan-visit-item:hover {
+  background: #f8fafc;
+}
+
+.wan-visit-item-label {
+  color: #334155;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-right: 8px;
+}
+
+.wan-visit-item-val {
+  font-weight: 700;
+  font-size: 11.5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.wan-visit-item-val.today {
+  color: #059669;
+}
+
+.wan-visit-item-val.total {
+  color: #2563eb;
+}
+
+.wan-visit-item-summary {
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.wan-visit-item-summary.today {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.wan-visit-item-summary.today .wan-visit-item-label {
+  color: #166534;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.wan-visit-item-summary.total {
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+}
+
+.wan-visit-item-summary.total .wan-visit-item-label {
+  color: #0369a1;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.wan-visit-item-val.summary {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.wan-visit-item-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding-left: 4px;
+}
+
+.wan-visit-divider {
+  height: 1px;
+  background: #e2e8f0;
+  margin: 3px 0;
+}
+
+.wan-visit-popover-footer {
+  padding: 6px 12px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  font-size: 10px;
+  color: #64748b;
+  text-align: center;
 }
 
 /* Sub Navigation Bar */

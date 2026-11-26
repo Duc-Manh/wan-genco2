@@ -423,6 +423,61 @@ const server = http.createServer((req, res) => {
     }
   }
 
+  // API Route /api/visits
+  if (reqUrl === '/api/visits') {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const visitsFile = path.join(ROOT_DIR, 'data', 'visits.json');
+    let visitData: any = {
+      date: todayStr,
+      today: { tongcongty: 6, ge2pmb: 12, thacmo: 5, avuong: 4, songbaha: 5, haiphong: 7, phalai: 6, trungson: 3 },
+      total: { tongcongty: 128, ge2pmb: 245, thacmo: 96, avuong: 82, songbaha: 89, haiphong: 114, phalai: 105, trungson: 73 },
+    };
+
+    try {
+      if (fs.existsSync(visitsFile)) {
+        const stored = JSON.parse(fs.readFileSync(visitsFile, 'utf-8'));
+        if (stored && typeof stored === 'object') {
+          if (stored.date === todayStr) {
+            visitData = stored;
+          } else {
+            visitData.total = { ...visitData.total, ...(stored.total || {}) };
+            visitData.date = todayStr;
+            visitData.today = { tongcongty: 0, ge2pmb: 0, thacmo: 0, avuong: 0, songbaha: 0, haiphong: 0, phalai: 0, trungson: 0 };
+          }
+        }
+      }
+    } catch {}
+
+    if (req.method === 'GET') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(visitData));
+      return;
+    }
+
+    if (req.method === 'POST') {
+      let body = '';
+      req.on('data', (c) => { body += c; });
+      req.on('end', () => {
+        try {
+          const { key } = JSON.parse(body || '{}');
+          const targetKey = key || 'ge2pmb';
+          visitData.today[targetKey] = (visitData.today[targetKey] || 0) + 1;
+          visitData.total[targetKey] = (visitData.total[targetKey] || 0) + 1;
+          try {
+            fs.mkdirSync(path.join(ROOT_DIR, 'data'), { recursive: true });
+            fs.writeFileSync(visitsFile, JSON.stringify(visitData, null, 2), 'utf-8');
+          } catch {}
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(visitData));
+        } catch {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Invalid JSON' }));
+        }
+      });
+      return;
+    }
+  }
+
   const relPath = reqUrl === '/' ? '/index.html' : reqUrl;
   const safePath = path.normalize(relPath).replace(/^(\.\.(\/|\\|$))+/, '');
   const fullPath = path.join(ROOT_DIR, safePath);
