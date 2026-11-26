@@ -421,7 +421,8 @@ body,
 .wan-visit-popover {
   position: absolute;
   top: calc(100% + 8px);
-  left: 0;
+  right: 0;
+  left: auto;
   width: 380px;
   max-width: calc(100vw - 32px);
   background: #ffffff;
