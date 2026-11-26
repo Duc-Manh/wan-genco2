@@ -313,15 +313,39 @@ export class WanApp {
           initVisitStats()       {
     this.updateVisitUI();
 
+    // Lắng nghe thay đổi lượt truy cập để cập nhật UI
     window.addEventListener('wan:visits-changed', () => {
       this.updateVisitUI();
     });
 
-    const wrapper = this.container.querySelector('#wan-visit-dropdown-wrapper');
-    wrapper?.addEventListener('mouseenter', () => {
+    // Đồng bộ ngay với máy chủ
+    VisitStore.syncWithServer().then(() => {
       this.updateVisitUI();
     });
 
+    // Cập nhật đồng hồ thời gian thực mỗi 1 giây
+    setInterval(() => {
+      const clockEl = this.container.querySelector('#wan-visit-live-clock');
+      if (clockEl) {
+        clockEl.textContent = VisitStore.getRealtimeClockString();
+      }
+    }, 1000);
+
+    // Tự động đồng bộ số liệu thời gian thực từ máy chủ định kỳ mỗi 5 giây
+    setInterval(() => {
+      VisitStore.syncWithServer();
+    }, 5000);
+
+    // Khi người dùng rê chuột vào nút Lượt truy cập, đồng bộ và làm mới UI ngay lập tức
+    const wrapper = this.container.querySelector('#wan-visit-dropdown-wrapper');
+    wrapper?.addEventListener('mouseenter', () => {
+      this.updateVisitUI();
+      VisitStore.syncWithServer().then(() => {
+        this.updateVisitUI();
+      });
+    });
+
+    // Ghi nhận lượt truy cập của tài khoản đơn vị đăng nhập trong phiên làm việc
     if (AuthManager.isAuthenticated()) {
       const loggedUnit = AuthManager.getLoggedInUnit();
       const sessionKey = `wan_session_visit_${loggedUnit}`;

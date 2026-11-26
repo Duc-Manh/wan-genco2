@@ -425,12 +425,29 @@ const server = http.createServer((req, res) => {
 
   // API Route /api/visits
   if (reqUrl === '/api/visits') {
-    const todayStr = new Date().toISOString().slice(0, 10);
+    let todayStr = '';
+    try {
+      todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date());
+    } catch {
+      todayStr = new Date().toISOString().slice(0, 10);
+    }
+
+    const emptyUnits = () => ({
+      tongcongty: 0,
+      ge2pmb: 0,
+      thacmo: 0,
+      avuong: 0,
+      songbaha: 0,
+      haiphong: 0,
+      phalai: 0,
+      trungson: 0,
+    });
+
     const visitsFile = path.join(ROOT_DIR, 'data', 'visits.json');
     let visitData: any = {
       date: todayStr,
-      today: { tongcongty: 6, ge2pmb: 12, thacmo: 5, avuong: 4, songbaha: 5, haiphong: 7, phalai: 6, trungson: 3 },
-      total: { tongcongty: 128, ge2pmb: 245, thacmo: 96, avuong: 82, songbaha: 89, haiphong: 114, phalai: 105, trungson: 73 },
+      today: emptyUnits(),
+      total: emptyUnits(),
     };
 
     try {
@@ -438,11 +455,15 @@ const server = http.createServer((req, res) => {
         const stored = JSON.parse(fs.readFileSync(visitsFile, 'utf-8'));
         if (stored && typeof stored === 'object') {
           if (stored.date === todayStr) {
-            visitData = stored;
+            visitData = {
+              date: todayStr,
+              today: { ...emptyUnits(), ...(stored.today || {}) },
+              total: { ...emptyUnits(), ...(stored.total || {}) },
+            };
           } else {
-            visitData.total = { ...visitData.total, ...(stored.total || {}) };
             visitData.date = todayStr;
-            visitData.today = { tongcongty: 0, ge2pmb: 0, thacmo: 0, avuong: 0, songbaha: 0, haiphong: 0, phalai: 0, trungson: 0 };
+            visitData.today = emptyUnits();
+            visitData.total = { ...emptyUnits(), ...(stored.total || {}) };
           }
         }
       }

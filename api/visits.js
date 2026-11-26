@@ -2,41 +2,36 @@ import { checkAndSetCors } from './auth.js';
 import { kvGet, kvSet } from './kv.js';
 
 function getTodayDateString() {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, '0');
-  const d = String(now.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
+  try {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date());
+  } catch {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
 }
 
-const BASE_TODAY = {
-  tongcongty: 6,
-  ge2pmb: 12,
-  thacmo: 5,
-  avuong: 4,
-  songbaha: 5,
-  haiphong: 7,
-  phalai: 6,
-  trungson: 3,
-};
-
-const BASE_TOTAL = {
-  tongcongty: 128,
-  ge2pmb: 245,
-  thacmo: 96,
-  avuong: 82,
-  songbaha: 89,
-  haiphong: 114,
-  phalai: 105,
-  trungson: 73,
-};
+function createEmptyMap() {
+  return {
+    tongcongty: 0,
+    ge2pmb: 0,
+    thacmo: 0,
+    avuong: 0,
+    songbaha: 0,
+    haiphong: 0,
+    phalai: 0,
+    trungson: 0,
+  };
+}
 
 let inMemoryStats = null;
 
 async function getStats() {
   const todayStr = getTodayDateString();
   try {
-    const data = await kvGet('wan_visit_stats');
+    const data = await kvGet('wan_visit_stats_real');
     if (data && typeof data === 'object') {
       if (data.date === todayStr) {
         return data;
@@ -44,10 +39,10 @@ async function getStats() {
         // Date rollover
         const rolledOver = {
           date: todayStr,
-          today: { tongcongty: 0, ge2pmb: 0, thacmo: 0, avuong: 0, songbaha: 0, haiphong: 0, phalai: 0, trungson: 0 },
-          total: { ...(data.total || BASE_TOTAL) },
+          today: createEmptyMap(),
+          total: { ...createEmptyMap(), ...(data.total || {}) },
         };
-        await kvSet('wan_visit_stats', rolledOver);
+        await kvSet('wan_visit_stats_real', rolledOver);
         return rolledOver;
       }
     }
@@ -56,13 +51,13 @@ async function getStats() {
   if (!inMemoryStats) {
     inMemoryStats = {
       date: todayStr,
-      today: { ...BASE_TODAY },
-      total: { ...BASE_TOTAL },
+      today: createEmptyMap(),
+      total: createEmptyMap(),
     };
   } else if (inMemoryStats.date !== todayStr) {
     inMemoryStats = {
       date: todayStr,
-      today: { tongcongty: 0, ge2pmb: 0, thacmo: 0, avuong: 0, songbaha: 0, haiphong: 0, phalai: 0, trungson: 0 },
+      today: createEmptyMap(),
       total: { ...inMemoryStats.total },
     };
   }
@@ -91,7 +86,7 @@ export default async function handler(req, res) {
 
     inMemoryStats = stats;
     try {
-      await kvSet('wan_visit_stats', stats);
+      await kvSet('wan_visit_stats_real', stats);
     } catch {}
 
     return res.status(200).json(stats);
