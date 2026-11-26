@@ -293,7 +293,7 @@ export class VisitStore {
     return `
       <div class="wan-visit-popover-inner">
         <!-- Header với Đồng hồ thời gian thực -->
-        <div class="wan-visit-popover-header">
+        <div class="wan-visit-popover-header" style="background: #1d4ed8; border-bottom: 1px solid #1e40af;">
           <div class="wan-visit-popover-title">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
@@ -310,7 +310,7 @@ export class VisitStore {
         </div>
 
         <!-- Realtime Clock Subbar -->
-        <div class="wan-visit-clock-bar">
+        <div class="wan-visit-clock-bar" style="background: #1e40af; border-bottom: 1px solid #172554;">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
             <circle cx="12" cy="12" r="10"/>
             <polyline points="12 6 12 12 16 14"/>
@@ -337,8 +337,6 @@ export class VisitStore {
               ${todayRowsHtml}
             </div>
           </div>
-
-          <div class="wan-visit-divider"></div>
 
           <!-- PHẦN 2: TỔNG SỐ LƯỢT -->
           <div class="wan-visit-section">

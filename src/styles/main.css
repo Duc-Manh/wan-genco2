@@ -464,12 +464,12 @@ body,
 
 .wan-visit-popover-header {
   padding: 10px 14px;
-  background: #1e293b;
+  background: #1d4ed8;
   color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid #334155;
+  border-bottom: 1px solid #1e40af;
 }
 
 .wan-visit-popover-title {
@@ -479,7 +479,7 @@ body,
   display: flex;
   align-items: center;
   gap: 7px;
-  color: #f8fafc;
+  color: #ffffff;
 }
 
 .wan-visit-live-pill {
@@ -488,18 +488,19 @@ body,
   gap: 5px;
   font-size: 10.5px;
   font-weight: 600;
-  background: rgba(34, 197, 94, 0.15);
-  color: #4ade80;
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
   padding: 2px 7px;
   border-radius: 999px;
-  border: 1px solid rgba(34, 197, 94, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.35);
 }
 
 .wan-visit-live-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #22c55e;
+  background: #4ade80;
+  box-shadow: 0 0 6px #4ade80;
   animation: wan-pulse-dot 1.8s infinite;
 }
 
@@ -513,46 +514,47 @@ body,
   align-items: center;
   gap: 6px;
   padding: 5px 14px;
-  background: #0f172a;
-  border-bottom: 1px solid #1e293b;
+  background: #1e40af;
+  border-bottom: 1px solid #172554;
   font-size: 11px;
-  color: #94a3b8;
+  color: #bfdbfe;
 }
 
 .wan-visit-clock-bar svg {
-  color: #38bdf8;
+  color: #93c5fd;
   flex-shrink: 0;
 }
 
 .wan-visit-clock-label {
   font-weight: 500;
-  color: #94a3b8;
+  color: #bfdbfe;
 }
 
 .wan-visit-clock-val {
   font-weight: 700;
   font-family: 'SF Mono', Monaco, Menlo, Consolas, monospace;
-  color: #38bdf8;
+  color: #ffffff;
   letter-spacing: 0.3px;
 }
 
 .wan-visit-popover-body {
   max-height: 480px;
   overflow-y: auto;
-  padding: 8px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.wan-visit-section {
+  padding: 6px 12px;
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
+.wan-visit-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
 .wan-visit-section-header {
-  margin-bottom: 1px;
+  margin-top: 1px;
+  margin-bottom: 0px;
 }
 
 .wan-visit-section-tag {
@@ -657,7 +659,8 @@ body,
 .wan-visit-divider {
   height: 1px;
   background: #e2e8f0;
-  margin: 2px 0;
+  margin: 1px 0;
+  opacity: 0.6;
 }
 
 .wan-visit-popover-footer {
